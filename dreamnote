@@ -32,14 +32,14 @@ function write_conf() {
     local dn_name_var_name="$1"; shift
     
     cat <<-EOT >> "${dotfile_path}"
-    # ${dotfile_path} : dreamnote configuration file
-    
-    
-    # path of the dream note
-    ${dn_path_var_name}=$cur_dir
-    
-    # name of the dream note
-    ${dn_name_var_name}=$dn_name
+	# ${dotfile_path} : dreamnote configuration file
+	
+	
+	# path of the dream note
+	${dn_path_var_name}=$cur_dir
+	
+	# name of the dream note
+	${dn_name_var_name}=$dn_name
 	EOT
 }
 #TODO: remplacer >> (append) par > (overwrite) ?
@@ -99,7 +99,6 @@ function import_part_to_main() {
     local imported_parts_old=$(grep '^\\subimport{' "$maintex_path") # TODO: compléter la pattern pour éviter
     local imported_parts_new
     
-    echo "$imported_parts_old"
     if [ -z "$imported_parts_old" ]; then
         echo "empty"
         import_part_cur=$( echo "${import_part_cur}" | sed 's,\\,\\\\\\,' )
@@ -108,11 +107,8 @@ function import_part_to_main() {
     else
         echo "find"
         imported_parts_new="$imported_parts_old"$'\n'"${import_part_cur}"
-        #echo "$imported_parts_new"
         imported_parts_new=$( echo "${imported_parts_new}" | sort -u )
-        #echo "$imported_parts_new"
         imported_parts_new=$( echo "${imported_parts_new}" | sed 's/\\/\\\\/')
-        #echo "$imported_parts_new"
         perl -i -0pe "s#\Q${imported_parts_old}\E#${imported_parts_new}#" "$maintex_path"
     fi
 }
@@ -135,13 +131,40 @@ function append_dream_cur_date() {
     local dn_name="$1"; shift
     local tex_contents="$1"; shift
     
-    local chapter_dir="${dn_path}/${dn_name}/${tex_contents}/${year}/chapter"
+    local chapter_dir="${dn_path}/${dn_name}/${tex_contents}/${year}/chapters"
     local part_file="${dn_path}/${dn_name}/${tex_contents}/${year}/${year}.tex"
+    local chapt_file="${dn_path}/${dn_name}/${tex_contents}/${year}/chapters/${month_num}.tex"
     
     if [ ! -e "$part_file" ] ; then
         mkdir -p "$chapter_dir"
-        echo "\part{Année ${year}}" > "${part_file}"
+        cat <<-EOT >> "${part_file}"
+		%------------------------------------------------------------------------------
+		%   PART: Année ${year}
+		%------------------------------------------------------------------------------
+		
+		\part{Année ${year}}
+		
+		%------------------------------------------------------------------------------
+		%   CHAPTERS
+		%------------------------------------------------------------------------------
+		EOT
         import_part_to_main "${dn_path}/${dn_name}/main.tex" "${tex_contents}/${year}/${year}.tex"
+    fi
+
+    if [ ! -e "$chapt_file" ] ; then
+        cat <<-EOT >> "${chapt_file}"
+		%------------------------------------------------------------------------------
+		%   CHAPTER: ${month_let} ${year}
+		%------------------------------------------------------------------------------
+		
+		\chapterimage{chapter_head_2.pdf} % Chapter heading image
+		
+		\chapter{${month_let} ${year}}\index{${month_let} ${year}}
+		
+		%------------------------------------------------------------------------------
+		%   DREAMS
+		%------------------------------------------------------------------------------
+		EOT
     fi
 }
 
@@ -159,7 +182,7 @@ function main() {
     local dotfile_name='.dreamrc'
     local dotfile_path="${HOME}/${dotfile_name}"
     local tex_contents="contents"
-    local -A date_today
+    local -A today
     today[day]=$(date +"%d")
     today[month_number]=$(date +"%m")
     today[month_letter]=$(date +"%B")
@@ -182,6 +205,7 @@ function main() {
         t|test)
             # this case is only used for test purpose
             #import_part_to_main "${dream_note_path}/${dream_note_name}/main.tex" "${tex_contents}/2016/2016.tex"
+            echo "${today[@]}" 
             append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "2018" "$dream_note_path" "$dream_note_name" "$tex_contents"
             exit 0
             ;;
@@ -230,3 +254,4 @@ function main() {
 main "$@"
 
 # \usepackage[english]{babel} % Replace english by french ?
+# voir les usepackage utilisé dans mon autre carnet de rêve.
