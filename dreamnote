@@ -1,59 +1,232 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-#                                  Variable                                   #
-###############################################################################
-
-__ScriptVersion="1"
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-###############################################################################
 #                                  Functions                                  #
 ###############################################################################
 
-#===  FUNCTION  ===============================================================
-#         NAME:  usage
-#  DESCRIPTION:  Display usage information.
-#==============================================================================
+# This function print the "how to use" this program
 function usage ()
 {
     echo "Usage :  $0 [options] [--]
 
     Options:
     -h|help       Display this message
-    -v|version    Display script version"
+    -v|version    Display script version
+    -i|init       Initialize a dream note in the current directory
+    -a|add        Add a new dream to the dream note
+    -t|test       used only by developper to quickly test functions"
+}
 
-}    # ----------  end of function usage  ----------
+# This function write a dotfile in the user's home directory. It contains the
+# path of the dream note.
+# $1 - The current directory.
+# $2 - Dotfile path.
+# $3 - name of the dream note provided by the user
+# $4 - name of the dream note path variable
+# $5 - name of the dream note name variable
+function write_conf() {
+    local cur_dir="$1"; shift
+    local dotfile_path="$1"; shift
+    local dn_name="$1"; shift
+    local dn_path_var_name="$1"; shift
+    local dn_name_var_name="$1"; shift
+    
+    cat <<-EOT >> "${dotfile_path}"
+    # ${dotfile_path} : dreamnote configuration file
+    
+    
+    # path of the dream note
+    ${dn_path_var_name}=$cur_dir
+    
+    # name of the dream note
+    ${dn_name_var_name}=$dn_name
+	EOT
+}
+#TODO: remplacer >> (append) par > (overwrite) ?
 
+# This function initialize a dream note inside the current directory and create
+# a dotfile specifiying the path of the dreamnote.
+# $1 - url of the latex template
+# $2 - name of the contents directory
+# $3 - The current directory.
+# $4 - Dotfile path.
+# $5 - name of the dream note provided by the user
+# $6 - name of the dream note path variable
+# $7 - name of the dream note name variable
+function initialize() {
+    local url="$1"; shift
+    local tex_contents="$1"; shift
+    local cur_dir="$1"; shift
+    local dotfile_path="$1"; shift
+    local dn_name="$1"; shift
+    local dn_path_var_name="$1"; shift
+    local dn_name_var_name="$1"; shift
+    
+    if [ -s "$dotfile_path" ]; then
+        echo 'a dreamnote already exists !'
+    else
+        echo 'Initializing dream note…'
+        filename=$(basename "$url")
+        wget -N "$url"
+        unzip "$filename" -d "$dn_name"
+        cd "$dn_name"
+        firstline=$(grep -n -m 1 -E '^\\(part|chapter|section){' main.tex | cut -d : -f 1)
+        lastline=$(grep -n '^\\end{document}' main.tex | cut -d : -f 1)
+        let lastline=lastline-1
+        sed -i main.tex -re "$firstline,${lastline}d"
+        sed -i '/\\\input{structure}/a \\\usepackage{import}' main.tex
+        mkdir "$tex_contents" 
+        echo "Creating a configuration file ($dotfile_path)…"
+        write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
+    fi
+}
+#TODO: git init, exclude unecessary file from git repo
+#TODO: cut down the initialize into functions
+
+# This function import a part.tex (ex: 2016.tex) to the main.tex document.
+# $1 - Path of the main.tex of dreamnote.
+# $2 - Path of the part.tex to include in the main.tex of the dreamnote.
+function import_part_to_main() {
+    local maintex_path="$1"; shift
+    local part_path="$1"; shift
+
+    local filename=$(basename "${part_path}")
+    filename="${filename%.*}"
+    local dirname=$(dirname "${part_path}")
+    dirname="${dirname}/"
+    local import_part_cur="\subimport{${dirname}}{${filename}}"
+
+    local imported_parts_old=$(grep '^\\subimport{' "$maintex_path") # TODO: compléter la pattern pour éviter
+    local imported_parts_new
+    
+    echo "$imported_parts_old"
+    if [ -z "$imported_parts_old" ]; then
+        echo "empty"
+        import_part_cur=$( echo "${import_part_cur}" | sed 's,\\,\\\\\\,' )
+        echo "$import_part_cur"
+        sed -i "/^\\\end{document}/i ${import_part_cur}\n" "$maintex_path"
+    else
+        echo "find"
+        imported_parts_new="$imported_parts_old"$'\n'"${import_part_cur}"
+        #echo "$imported_parts_new"
+        imported_parts_new=$( echo "${imported_parts_new}" | sort -u )
+        #echo "$imported_parts_new"
+        imported_parts_new=$( echo "${imported_parts_new}" | sed 's/\\/\\\\/')
+        #echo "$imported_parts_new"
+        perl -i -0pe "s#\Q${imported_parts_old}\E#${imported_parts_new}#" "$maintex_path"
+    fi
+}
+
+# This function append a new dream template to the end of the latex document at 
+# the current date.
+# $1 - Day of today, ex: 11
+# $2 - Month today in number, ex: 12
+# $3 - Month today in letter, ex: Decembre
+# $4 - Year of today, ex: 2016
+# $5 - Path of the dream note
+# $6 - Name of the dream note
+# $7 - Name of the contents directory
+function append_dream_cur_date() {
+    local day="$1"; shift
+    local month_num="$1"; shift
+    local month_let="$1"; shift
+    local year="$1"; shift
+    local dn_path="$1"; shift
+    local dn_name="$1"; shift
+    local tex_contents="$1"; shift
+    
+    local chapter_dir="${dn_path}/${dn_name}/${tex_contents}/${year}/chapter"
+    local part_file="${dn_path}/${dn_name}/${tex_contents}/${year}/${year}.tex"
+    
+    if [ ! -e "$part_file" ] ; then
+        mkdir -p "$chapter_dir"
+        echo "\part{Année ${year}}" > "${part_file}"
+        import_part_to_main "${dn_path}/${dn_name}/main.tex" "${tex_contents}/${year}/${year}.tex"
+    fi
+}
 
 ###############################################################################
-#                    Main: Handle command line arguments                      #
+#                               Main function                                 #
 ###############################################################################
 
-while getopts ":hvi" opt
-do
-  case $opt in
+# The main function contains variable definition and the getopts loop that
+# allow to handle the command line arguments.
+function main() {
+    local __ScriptVersion="1"
+    local SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    local template=http://www.latextemplates.com/templates/books/2/book_2.zip
+    local current_dir=$(pwd)
+    local dotfile_name='.dreamrc'
+    local dotfile_path="${HOME}/${dotfile_name}"
+    local tex_contents="contents"
+    local -A date_today
+    today[day]=$(date +"%d")
+    today[month_number]=$(date +"%m")
+    today[month_letter]=$(date +"%B")
+    today[year]=$(date +"%Y")
+    local -A var_name # Name of the dotfile variable
+    var_name[dn_path]="dream_note_path"
+    var_name[dn_name]="dream_note_name"
 
-    i) 
-        echo "initialize dream-note"
-        exit 0
-        ;;
+    
+    if [ -f "$dotfile_path" ]; then
+        source "$dotfile_path"
+    fi
+    
+    #echo $dream_note_name
+    #echo "${!var_name[dn_path]}"
 
-    h|help)
-        usage;
-        exit 0
-        ;;
+    while getopts ":hvi:ta" opt
+    do
+      case $opt in
+        t|test)
+            # this case is only used for test purpose
+            #import_part_to_main "${dream_note_path}/${dream_note_name}/main.tex" "${tex_contents}/2016/2016.tex"
+            append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "2018" "$dream_note_path" "$dream_note_name" "$tex_contents"
+            exit 0
+            ;;
+        i|init)
+            initialize "$template" "$tex_contents" "$current_dir" "$dotfile_path" "$OPTARG" "${var_name[dn_path]}" "${var_name[dn_name]}"
+            exit 0
+            ;;
+        a|add)
+            for var in "${var_name[@]}"; do
+                if [ -n "${!var}" ]; then
+                    echo "$var set"
+                else
+                    echo "$var not set (or empty)"
+                    echo "Could not create a new dream!"
+                    exit 2
+                fi
+            done
+            append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "$dream_note_path" "$dream_note_name" "$tex_contents"
+            exit 0
+            ;;
+        h|help)
+            usage
+            exit 0
+            ;;
+        v|version)
+            echo "$0 -- Version $__ScriptVersion"
+            exit 0
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument." >&2
+            exit 1
+            ;;
+      esac
+    done
+    shift $(($OPTIND-1))
+}
 
-    v|version)
-        echo "$0 -- Version $__ScriptVersion";
-        exit 0
-        ;;
+###############################################################################
+#                                Launch Main                                  #
+###############################################################################
 
-    * )  
-        echo -e "\n  Option does not exist : $OPTARG\n"
-        usage; exit 1
-        ;;
+main "$@"
 
-  esac    # --- end of case ---
-done
-shift $(($OPTIND-1))
+# \usepackage[english]{babel} % Replace english by french ?
