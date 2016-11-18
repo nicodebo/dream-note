@@ -7,14 +7,26 @@
 # This function print the "how to use" this program
 function usage ()
 {
-    echo "Usage :  $0 [options] [--]
-
-    Options:
-    -h|help       Display this message
-    -v|version    Display script version
-    -i|init       Initialize a dream note in the current directory
-    -a|add        Add a new dream to the dream note
-    -t|test       used only by developper to quickly test functions"
+    cat <<-EOF
+	Usage:
+	$0 { [-h] | [-v] | [-i <name>] | [-a] }
+	A personal tool to create and manage my dream note
+	
+	Options:
+	-h, --help      Display this help message and exit
+	-v, --version   Display script version and exit
+	-i <name>       Initialize a dream note named <name> in the current
+					directory
+	-a              Insert a dream at the current date in the dream note
+	
+	Informations:
+	The dream note is edited as a latex document based on "The Legrand Orange
+	Book" (http://www.latextemplates.com/template/the-legrand-orange-book).
+	When Initializing [-i <name>] a dream note a dotfile named .dreamrc is
+	created in the users home directory. It contains the <name> of the dream
+	note and the directory of the dream note. Only one dream note can be
+	created.
+	EOF
 }
 
 # This function write a dotfile in the user's home directory. It contains the
@@ -47,7 +59,7 @@ function write_conf() {
 # This function initialize a dream note inside the current directory and create
 # a dotfile specifiying the path of the dreamnote.
 # $1 - url of the latex template
-# $2 - name of the contents directory
+# $2 - name of the contents drectory
 # $3 - The current directory.
 # $4 - Dotfile path.
 # $5 - name of the dream note provided by the user
@@ -90,20 +102,19 @@ function initialize() {
 function import_part_to_main() {
     local maintex_path="$1"; shift
     local part_path="$1"; shift
-
+    
     local filename=$(basename "${part_path}")
     filename="${filename%.*}"
     local dirname=$(dirname "${part_path}")
     dirname="${dirname}/"
     local import_part_cur="\subimport{${dirname}}{${filename}}"
-
+    
     local imported_parts_old=$(grep '^\\subimport{' "$maintex_path") # TODO: compléter la pattern pour éviter
     local imported_parts_new
     
     if [ -z "$imported_parts_old" ]; then
         echo "empty"
         import_part_cur=$( echo "${import_part_cur}" | sed 's,\\,\\\\\\,' )
-        #echo "$import_part_cur"
         sed -i "/^\\\end{document}/i ${import_part_cur}\n" "$maintex_path"
     else
         echo "find"
@@ -121,13 +132,13 @@ function import_part_to_main() {
 function import_chapt_to_part() {
     local part_path="$1"; shift
     local chapt_path="$1"; shift
-
+    
     local filename=$(basename "${chapt_path}")
     filename="${filename%.*}"
     local dirname=$(dirname "${chapt_path}")
     dirname="${dirname}/"
     local input_chapt_cur="\input{${dirname}${filename}}"
-
+    
     local input_chapt_old=$(grep '^\\input{' "$part_path") # TODO: compléter la pattern pour éviter
     local input_chapt_new
     
@@ -144,6 +155,53 @@ function import_chapt_to_part() {
         input_chapt_new=$( echo "${input_chapt_new}" | sort -u )
         input_chapt_new=$( echo "${input_chapt_new}" | sed 's/\\/\\\\/')
         perl -i -0pe "s#\Q${input_chapt_old}\E#${input_chapt_new}#" "$part_path"
+    fi
+}
+
+# This function insert a dream section with a date as a title and a subsection
+# which represent a dream with a dummy title.
+# $1 - Path of the chapter to add a dream.
+# $2 - Relative path of the chapter.tex to include in the part.tex
+# $3 - day
+# $4 - month letter
+# $5 - year
+function insert_dream() {
+    local chapt_path="$1"; shift
+    local dream_title="$1"; shift
+    local day="$1"; shift
+    local month_let="$1"; shift
+    local year="$1"; shift
+    
+    local section_cur="\section{${day} ${month_let} ${year}}"
+    local subsection_cur="\subsection{${dream_title}}"
+    local dream_cur="${section_cur}"$'\n'"${subsection_cur}"
+    
+    local section_old=$(grep '^\\section{' "$chapt_path")
+    local section_new
+    local sect_cur_pos
+    
+    if [ -z "$section_old" ]; then
+        echo "empty: no dream found"
+        echo "$dream_cur" >> "$chapt_path"
+    else
+        echo "find: dream found"
+        if echo "${section_old}" | grep "$(echo "${section_cur}" | sed 's/\\/\\\\/')"; then
+            echo "This dream section already exists !"
+        else
+            section_new="$section_old"$'\n'"$section_cur"
+            section_new=$( echo "${section_new}" | sort -u )
+            section_cur=$( echo "${section_cur}" | sed 's/\\/\\\\/')
+            sect_cur_pos=$(echo "${section_new}" | grep -A 1 "${section_cur}" | tail -n +2)
+            if [ -z "$sect_cur_pos" ]; then
+                echo "$dream_cur" >> "$chapt_path"
+            else
+                dream_cur=$( echo "${dream_cur}" | sed 's,^\\,\\\\\\,' )
+                sect_cur_pos=$( echo "${sect_cur_pos}" | sed 's,\\,\\\\,' )
+                while read -r line; do
+                    sed -i "/${sect_cur_pos}/i $line" "$chapt_path"
+                done <<< "$dream_cur"
+            fi
+        fi
     fi
 }
 
@@ -202,6 +260,8 @@ function append_dream_cur_date() {
 		EOT
         import_chapt_to_part "${part_file}" "${chapt_dir}/${month_num}.tex"
     fi
+
+    insert_dream "$chapt_file" "blank title" "$day" "$month_let" "$year"
 }
 
 ###############################################################################
@@ -226,22 +286,19 @@ function main() {
     local -A var_name # Name of the dotfile variable
     var_name[dn_path]="dream_note_path"
     var_name[dn_name]="dream_note_name"
-
+    
     
     if [ -f "$dotfile_path" ]; then
         source "$dotfile_path"
     fi
     
-    #echo $dream_note_name
-    #echo "${!var_name[dn_path]}"
-
     while getopts ":hvi:ta" opt
     do
       case $opt in
         t|test)
             # this case is only used for test purpose
             #import_part_to_main "${dream_note_path}/${dream_note_name}/main.tex" "${tex_contents}/2016/2016.tex"
-            append_dream_cur_date "${today[day]}" "11" "Novembre" "2011" "$dream_note_path" "$dream_note_name" "$tex_contents"
+            append_dream_cur_date "21" "11" "novembre" "2016" "$dream_note_path" "$dream_note_name" "$tex_contents"
             exit 0
             ;;
         i|init)
@@ -251,7 +308,7 @@ function main() {
         a|add)
             for var in "${var_name[@]}"; do
                 if [ -n "${!var}" ]; then
-                    echo "$var set"
+                    true
                 else
                     echo "$var not set (or empty)"
                     echo "Could not create a new dream!"
@@ -290,3 +347,9 @@ main "$@"
 
 # \usepackage[english]{babel} % Replace english by french ?
 # voir les usepackage utilisé dans mon autre carnet de rêve.
+# TODO automatic version control of the dreamnote.
+# TODO dreamnote -c to compile and open pdf.
+# TODO insert a dream at a specific date
+# TODO README.md : latex, gnu tools (date, sort)
+# TODO open vim afer inserting a dream.
+# TODO write the usage function correctly
