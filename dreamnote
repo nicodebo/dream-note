@@ -85,7 +85,8 @@ function initialize() {
 
 # This function import a part.tex (ex: 2016.tex) to the main.tex document.
 # $1 - Path of the main.tex of dreamnote.
-# $2 - Path of the part.tex to include in the main.tex of the dreamnote.
+# $2 - Relative path of the part.tex to include in the main.tex of the
+# dreamnote.
 function import_part_to_main() {
     local maintex_path="$1"; shift
     local part_path="$1"; shift
@@ -102,7 +103,7 @@ function import_part_to_main() {
     if [ -z "$imported_parts_old" ]; then
         echo "empty"
         import_part_cur=$( echo "${import_part_cur}" | sed 's,\\,\\\\\\,' )
-        echo "$import_part_cur"
+        #echo "$import_part_cur"
         sed -i "/^\\\end{document}/i ${import_part_cur}\n" "$maintex_path"
     else
         echo "find"
@@ -113,7 +114,40 @@ function import_part_to_main() {
     fi
 }
 
-# This function append a new dream template to the end of the latex document at 
+# This function import a chapter (ex: 11.tex) to the part document (ex:
+# 2016.tex)
+# $1 - Path of the part.tex
+# $2 - Relative path of the chapter.tex to include in the part.tex
+function import_chapt_to_part() {
+    local part_path="$1"; shift
+    local chapt_path="$1"; shift
+
+    local filename=$(basename "${chapt_path}")
+    filename="${filename%.*}"
+    local dirname=$(dirname "${chapt_path}")
+    dirname="${dirname}/"
+    local input_chapt_cur="\input{${dirname}${filename}}"
+
+    local input_chapt_old=$(grep '^\\input{' "$part_path") # TODO: compléter la pattern pour éviter
+    local input_chapt_new
+    
+    if [ -z "$input_chapt_old" ]; then
+        echo "empty: no chapter found"
+        cat <<-EOT >> "${part_path}"
+		
+		${input_chapt_cur}
+		
+		EOT
+    else
+        echo "find: chapter found"
+        input_chapt_new="$input_chapt_old"$'\n'"${input_chapt_cur}"
+        input_chapt_new=$( echo "${input_chapt_new}" | sort -u )
+        input_chapt_new=$( echo "${input_chapt_new}" | sed 's/\\/\\\\/')
+        perl -i -0pe "s#\Q${input_chapt_old}\E#${input_chapt_new}#" "$part_path"
+    fi
+}
+
+# This function append a new dream template to the end of the latex document at
 # the current date.
 # $1 - Day of today, ex: 11
 # $2 - Month today in number, ex: 12
@@ -131,9 +165,10 @@ function append_dream_cur_date() {
     local dn_name="$1"; shift
     local tex_contents="$1"; shift
     
-    local chapter_dir="${dn_path}/${dn_name}/${tex_contents}/${year}/chapters"
+    local chapt_dir='chapters'
+    local chapter_dir="${dn_path}/${dn_name}/${tex_contents}/${year}/${chapt_dir}"
     local part_file="${dn_path}/${dn_name}/${tex_contents}/${year}/${year}.tex"
-    local chapt_file="${dn_path}/${dn_name}/${tex_contents}/${year}/chapters/${month_num}.tex"
+    local chapt_file="${dn_path}/${dn_name}/${tex_contents}/${year}/${chapt_dir}/${month_num}.tex"
     
     if [ ! -e "$part_file" ] ; then
         mkdir -p "$chapter_dir"
@@ -165,6 +200,7 @@ function append_dream_cur_date() {
 		%   DREAMS
 		%------------------------------------------------------------------------------
 		EOT
+        import_chapt_to_part "${part_file}" "${chapt_dir}/${month_num}.tex"
     fi
 }
 
@@ -205,8 +241,7 @@ function main() {
         t|test)
             # this case is only used for test purpose
             #import_part_to_main "${dream_note_path}/${dream_note_name}/main.tex" "${tex_contents}/2016/2016.tex"
-            echo "${today[@]}" 
-            append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "2018" "$dream_note_path" "$dream_note_name" "$tex_contents"
+            append_dream_cur_date "${today[day]}" "11" "Novembre" "2011" "$dream_note_path" "$dream_note_name" "$tex_contents"
             exit 0
             ;;
         i|init)
