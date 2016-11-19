@@ -5,8 +5,7 @@
 ###############################################################################
 
 # This function print the "how to use" this program
-function usage ()
-{
+function usage () {
     cat <<-EOF
 	Usage:
 	$0 { [-h] | [-v] | [-i <name>] | [-a] }
@@ -347,9 +346,3 @@ main "$@"
 
 # \usepackage[english]{babel} % Replace english by french ?
 # voir les usepackage utilisé dans mon autre carnet de rêve.
-# TODO automatic version control of the dreamnote.
-# TODO dreamnote -c to compile and open pdf.
-# TODO insert a dream at a specific date
-# TODO README.md : latex, gnu tools (date, sort)
-# TODO open vim afer inserting a dream.
-# TODO write the usage function correctly
