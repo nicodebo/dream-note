@@ -73,3 +73,6 @@ specific keywords.
 dream.
 * Add an option to output statistic about the dreams (total number of dreams,
 histogram by months, ...)
+* Add an option to add a package in the preamble and use this function to add 
+the import function.
+* Add separating line between each dream

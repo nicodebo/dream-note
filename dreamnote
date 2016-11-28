@@ -8,16 +8,22 @@
 function usage () {
     cat <<-EOF
 	Usage:
-	$0 { [-h] | [-v] | [-i <name>] | [-a] }
-	A personal tool to create and manage my dream note
+	$0 [Option]
+	A personal tool to create and manage my dream journal
 	
 	Options:
-	-h, --help      Display this help message and exit
-	-v, --version   Display script version and exit
+	-h, -help       Display this help message and exit
+	-v, -version    Display script version and exit
 	-i <name>       Initialize a dream note named <name> in the current
 					directory
 	-a              Insert a dream at the current date in the dream note
-	
+	-A <date>       Insert a dream at a user specified date. <date> must be in
+	                the YYYY-MM-DD format with YYYY=[0000;9999], MM=[01-12] and
+	                DD=[01-31].
+	-c              Compile the latex into a pdf with latexmk and the pdflatex 
+	                compiler and open the resulting pdf in the default
+	                previewer.
+	                
 	Informations:
 	The dream note is edited as a latex document based on "The Legrand Orange
 	Book" (http://www.latextemplates.com/template/the-legrand-orange-book).
@@ -89,9 +95,11 @@ function initialize() {
         mkdir "$tex_contents" 
         echo "Creating a configuration file ($dotfile_path)…"
         write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
+        wget -O .gitignore https://www.gitignore.io/api/latex
+        git init
+        git add -A && git commit -m "dream journal initialization"
     fi
 }
-#TODO: git init, exclude unecessary file from git repo
 #TODO: cut down the initialize into functions
 
 # This function import a part.tex (ex: 2016.tex) to the main.tex document.
@@ -263,6 +271,16 @@ function append_dream_cur_date() {
     insert_dream "$chapt_file" "blank title" "$day" "$month_let" "$year"
 }
 
+# Compile with latexmk and output pdf. Run in one shot mode.
+# $1 - Path of the dream note
+# $2 - Name of the dream note
+function output_pdf() {
+    local dn_path="$1"; shift
+    local dn_name="$1"; shift
+    local main_tex_path="${dn_path}/${dn_name}/main.tex"
+    latexmk -c -pdf -verbose -file-line-error -pv -interaction=nonstopmode -jobname="$dn_name" "${main_tex_path}"
+}
+
 ###############################################################################
 #                               Main function                                 #
 ###############################################################################
@@ -285,13 +303,14 @@ function main() {
     local -A var_name # Name of the dotfile variable
     var_name[dn_path]="dream_note_path"
     var_name[dn_name]="dream_note_name"
+    local regex_date="^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][1-9]|3[0-1])$"
     
     
     if [ -f "$dotfile_path" ]; then
         source "$dotfile_path"
     fi
     
-    while getopts ":hvi:ta" opt
+    while getopts ":hvi:taA:" opt
     do
       case $opt in
         t|test)
@@ -315,6 +334,32 @@ function main() {
                 fi
             done
             append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "$dream_note_path" "$dream_note_name" "$tex_contents"
+            exit 0
+            ;;
+        A)
+            for var in "${var_name[@]}"; do
+                if [ -n "${!var}" ]; then
+                    true
+                else
+                    echo "$var not set (or empty)"
+                    echo "Could not create a new dream!"
+                    exit 2
+                fi
+            done
+            if [[ $OPTARG =~ $regex_date ]]; then
+                today[day]=$(date -d "$OPTARG" '+%d')
+                today[month_number]=$(date -d "$OPTARG" '+%m')
+                today[month_letter]=$(date -d "$OPTARG" '+%B')
+                today[year]=$(date -d "$OPTARG" '+%Y')
+                append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "$dream_note_path" "$dream_note_name" "$tex_contents"
+                true
+            else
+                echo "Bad date format ! See help for more informations"
+            fi
+            exit 0
+            ;;
+        c|compile)
+            output_pdf "${var_name[dn_path]}" "${var_name[dn_name]}"
             exit 0
             ;;
         h|help)
@@ -346,3 +391,17 @@ main "$@"
 
 # \usepackage[english]{babel} % Replace english by french ?
 # voir les usepackage utilisé dans mon autre carnet de rêve.
+# latexmk -c (pour supprimer les fichiers annexes générés lors de la compilation)
+# latexmk -jobname=monCarnet (pour que le pdf en sortie soit nommé monCarnet.pdf au lieu de main.tex)
+# latexmk -pv (pour que le pdf previewer s'ouvre)
+#*g:vimtex_latexmk_options*
+##  By default, |vimtex| passes the following options to `latexmk`: >
+##     -pdf                     -- Compile to pdf documents
+##     -verbose                 -- More verbose output
+##     -file-line-error         -- Enable file:line:error style messages
+##     -synctex=1               -- Generate synctex data
+##     -interaction=nonstopmode -- Disable interactive mode
+# ecrire des tests avec bats pour prendre en main bats.
+# requirements: git, wget, latex distribution, latexmk, date (gnu tools), internet connection for initialization, unzip, perl
+# install instruction: git clone and then add to path
+# if you want to create a new dream note, remove the ~/.dreamrc
