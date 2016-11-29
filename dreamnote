@@ -96,8 +96,8 @@ function initialize() {
         echo "Creating a configuration file ($dotfile_path)…"
         write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
         wget -O .gitignore https://www.gitignore.io/api/latex
-        git init
-        git add -A && git commit -m "dream journal initialization"
+        #git init
+        #git add -A && git commit -m "dream journal initialization"
     fi
 }
 #TODO: cut down the initialize into functions
@@ -278,8 +278,28 @@ function output_pdf() {
     local dn_path="$1"; shift
     local dn_name="$1"; shift
     local main_tex_path="${dn_path}/${dn_name}/main.tex"
-    latexmk -c -pdf -verbose -file-line-error -pv -interaction=nonstopmode -jobname="$dn_name" "${main_tex_path}"
+    cd "${dn_path}/${dn_name}"
+    latexmk -C
+    latexmk -pdf -f -quiet -pdflatex="pdflatex -interaction=nonstopmode" main.tex
+    #latexmk -pdf -quiet -pdflatex="pdflatex -interaction=nonstopmode" main.tex
+    local texerror=$(rubber-info --errors main)
+    local texwarn=$(rubber-info --warnings main)
+    if [ -z "$texerror" ]; then
+        xdg-open main.pdf
+        echo "################################################################"
+        echo "#                          Warnings                            #"
+        echo "################################################################"
+        echo "$texwarn"
+    else
+        echo "################################################################"
+        echo "#                           Errors                             #"
+        echo "################################################################"
+        echo "$texerror"
+    fi
 }
+
+#TODO : update texlive distribution and see if -f option is still necessary
+#TODO : faire une variable pour le nom du fichier tex (main)
 
 ###############################################################################
 #                               Main function                                 #
@@ -310,13 +330,13 @@ function main() {
         source "$dotfile_path"
     fi
     
-    while getopts ":hvi:taA:" opt
+    while getopts ":hvi:taA:c" opt
     do
       case $opt in
         t|test)
             # this case is only used for test purpose
             #import_part_to_main "${dream_note_path}/${dream_note_name}/main.tex" "${tex_contents}/2016/2016.tex"
-            append_dream_cur_date "21" "11" "novembre" "2016" "$dream_note_path" "$dream_note_name" "$tex_contents"
+            append_dream_cur_date "21" "11" "novembre" "2016" "${!var_name[dn_path]}" "${!var_name[dn_name]}" "$tex_contents"
             exit 0
             ;;
         i|init)
@@ -333,7 +353,7 @@ function main() {
                     exit 2
                 fi
             done
-            append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "$dream_note_path" "$dream_note_name" "$tex_contents"
+            append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "${!var_name[dn_path]}" "${!var_name[dn_name]}" "$tex_contents"
             exit 0
             ;;
         A)
@@ -351,7 +371,7 @@ function main() {
                 today[month_number]=$(date -d "$OPTARG" '+%m')
                 today[month_letter]=$(date -d "$OPTARG" '+%B')
                 today[year]=$(date -d "$OPTARG" '+%Y')
-                append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "$dream_note_path" "$dream_note_name" "$tex_contents"
+                append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "${!var_name[dn_path]}" "${!var_name[dn_name]}" "$tex_contents"
                 true
             else
                 echo "Bad date format ! See help for more informations"
@@ -359,7 +379,7 @@ function main() {
             exit 0
             ;;
         c|compile)
-            output_pdf "${var_name[dn_path]}" "${var_name[dn_name]}"
+            output_pdf "${!var_name[dn_path]}" "${!var_name[dn_name]}"
             exit 0
             ;;
         h|help)
@@ -391,17 +411,8 @@ main "$@"
 
 # \usepackage[english]{babel} % Replace english by french ?
 # voir les usepackage utilisé dans mon autre carnet de rêve.
-# latexmk -c (pour supprimer les fichiers annexes générés lors de la compilation)
-# latexmk -jobname=monCarnet (pour que le pdf en sortie soit nommé monCarnet.pdf au lieu de main.tex)
-# latexmk -pv (pour que le pdf previewer s'ouvre)
-#*g:vimtex_latexmk_options*
-##  By default, |vimtex| passes the following options to `latexmk`: >
-##     -pdf                     -- Compile to pdf documents
-##     -verbose                 -- More verbose output
-##     -file-line-error         -- Enable file:line:error style messages
-##     -synctex=1               -- Generate synctex data
-##     -interaction=nonstopmode -- Disable interactive mode
 # ecrire des tests avec bats pour prendre en main bats.
-# requirements: git, wget, latex distribution, latexmk, date (gnu tools), internet connection for initialization, unzip, perl
+# requirements: git, wget, latex distribution, latexmk, date (gnu tools),
+# internet connection for initialization, unzip, perl, rubber
 # install instruction: git clone and then add to path
 # if you want to create a new dream note, remove the ~/.dreamrc
