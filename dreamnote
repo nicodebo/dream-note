@@ -93,6 +93,7 @@ function initialize() {
         sed -i main.tex -re "$firstline,${lastline}d"
         sed -i '/\\\input{structure}/a \\\usepackage{import}' main.tex
         mkdir "$tex_contents" 
+        #:> bibliography.bib
         echo "Creating a configuration file ($dotfile_path)…"
         write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
         wget -O .gitignore https://www.gitignore.io/api/latex
@@ -100,7 +101,10 @@ function initialize() {
         #git add -A && git commit -m "dream journal initialization"
     fi
 }
-#TODO: cut down the initialize into functions
+
+#TODO : cut down the initialize into functions
+#TODO : erase the content of the bibliography.bib. keep the insert
+#bibliography.
 
 # This function import a part.tex (ex: 2016.tex) to the main.tex document.
 # $1 - Path of the main.tex of dreamnote.
@@ -199,8 +203,10 @@ function insert_dream() {
             section_new=$( echo "${section_new}" | sort -u )
             section_cur=$( echo "${section_cur}" | sed 's/\\/\\\\/')
             sect_cur_pos=$(echo "${section_new}" | grep -A 1 "${section_cur}" | tail -n +2)
+            echo "$sect_cur_pos"
             if [ -z "$sect_cur_pos" ]; then
                 echo "$dream_cur" >> "$chapt_path"
+            #vim +10 file -c 'normal o'
             else
                 dream_cur=$( echo "${dream_cur}" | sed 's,^\\,\\\\\\,' )
                 sect_cur_pos=$( echo "${sect_cur_pos}" | sed 's,\\,\\\\,' )
@@ -208,9 +214,12 @@ function insert_dream() {
                     sed -i "/${sect_cur_pos}/i $line" "$chapt_path"
                 done <<< "$dream_cur"
             fi
+            #vim +10 file -c 'normal o'
         fi
     fi
 }
+# TODO: add nice separating line between each section.
+# TODO : open vim.
 
 # This function append a new dream template to the end of the latex document at
 # the current date.
@@ -280,8 +289,9 @@ function output_pdf() {
     local main_tex_path="${dn_path}/${dn_name}/main.tex"
     cd "${dn_path}/${dn_name}"
     latexmk -C
-    latexmk -pdf -f -quiet -pdflatex="pdflatex -interaction=nonstopmode" main.tex
+    #latexmk -pdf -f -quiet -pdflatex="pdflatex -interaction=nonstopmode" main.tex
     #latexmk -pdf -quiet -pdflatex="pdflatex -interaction=nonstopmode" main.tex
+    latexmk -pdf -quiet -f -pdflatex="pdflatex -interaction=nonstopmode" main.tex
     local texerror=$(rubber-info --errors main)
     local texwarn=$(rubber-info --warnings main)
     if [ -z "$texerror" ]; then
@@ -298,8 +308,8 @@ function output_pdf() {
     fi
 }
 
-#TODO : update texlive distribution and see if -f option is still necessary
 #TODO : faire une variable pour le nom du fichier tex (main)
+#TODO : ne pas afficher texwarn si cette variable est vide.
 
 ###############################################################################
 #                               Main function                                 #
@@ -323,7 +333,7 @@ function main() {
     local -A var_name # Name of the dotfile variable
     var_name[dn_path]="dream_note_path"
     var_name[dn_name]="dream_note_name"
-    local regex_date="^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][1-9]|3[0-1])$"
+    local regex_date="^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$"
     
     
     if [ -f "$dotfile_path" ]; then
