@@ -20,8 +20,8 @@ function usage () {
 	-A <date>       Insert a dream at a user specified date. <date> must be in
 	                the YYYY-MM-DD format with YYYY=[0000;9999], MM=[01-12] and
 	                DD=[01-31].
-	-c              Compile the latex into a pdf with latexmk and the pdflatex 
-	                compiler and open the resulting pdf in the default
+    -c              Compile the main tex file into a pdf with latexmk and the
+                    pdflatex compiler and open the resulting pdf in the default
 	                previewer.
 	                
 	Informations:
@@ -30,7 +30,8 @@ function usage () {
 	When Initializing [-i <name>] a dream note a dotfile named .dreamrc is
 	created in the users home directory. It contains the <name> of the dream
 	note and the directory of the dream note. Only one dream note can be
-	created.
+	created. If you want to start over a new dream journal, delete ~/.dreamrc
+    and initialize a new dream journal.
 	EOF
 }
 
@@ -191,7 +192,7 @@ function insert_dream() {
     local section_new
     local sect_cur_pos # Section to insert the current dream above.
     local cur_line
-	local sepline='%------------------------------------------------------------------------------'
+    local sepline='%------------------------------------------------------------------------------'
     local tmp_var
     local sect_below # section below the one to be inserted
     local sect_above # section above the one to be inserted
