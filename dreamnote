@@ -210,7 +210,7 @@ function insert_dream() {
             echo "This dream section already exists !"
             cur_line=$(echo "$tmp_var" | cut -d : -f 1)
             while true; do
-                read -p "Do you wish to edit the dream anyway ? [y(es)/n(o)]" yn
+                read -p "Do you wish to edit the dream anyway ? [y/n]" yn
                 case $yn in
                     [Yy]* ) "$EDITOR" +"$cur_line" "$chapt_path"; break;;
                     [Nn]* ) exit;;
