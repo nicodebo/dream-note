@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 
 ###############################################################################
+#                          Script execution options                           #
+###############################################################################
+
+#set -o errexit    # exit when a command fails
+#set -o pipefail
+#set -o nounset    # exit when using undeclared variable
+#set -o xtrace     # verbose
+
+###############################################################################
 #                                  Functions                                  #
 ###############################################################################
 
@@ -98,8 +107,8 @@ function initialize() {
         echo "Creating a configuration file ($dotfile_path)…"
         write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
         wget -O .gitignore https://www.gitignore.io/api/latex
-        #git init
-        #git add -A && git commit -m "dream journal initialization"
+        git init
+        git add -A && git commit -m "dream journal initialization"
     fi
 }
 
@@ -177,12 +186,16 @@ function import_chapt_to_part() {
 # $3 - day
 # $4 - month letter
 # $5 - year
+# $6 - Name of the dream note
+# $7 - Name of the contents directory
 function insert_dream() {
     local chapt_path="$1"; shift
     local dream_title="$1"; shift
     local day="$1"; shift
     local month_let="$1"; shift
     local year="$1"; shift
+    local dn_path="$1"; shift
+    local dn_name="$1"; shift
     
     local section_cur="\section{${day} ${month_let} ${year}}"
     local subsection_cur="\subsection{${dream_title}}"
@@ -246,7 +259,10 @@ function insert_dream() {
             fi
         fi
     fi
+    snapshot "$dn_path" "$dn_name"
 }
+
+# TODO: http://stackoverflow.com/questions/5139290/how-to-check-if-theres-nothing-to-be-committed-in-the-current-branch
 
 # This function append a new dream template to the end of the latex document at
 # the current date.
@@ -257,7 +273,7 @@ function insert_dream() {
 # $5 - Path of the dream note
 # $6 - Name of the dream note
 # $7 - Name of the contents directory
-function append_dream_cur_date() {
+function create_part_chapt() {
     local day="$1"; shift
     local month_num="$1"; shift
     local month_let="$1"; shift
@@ -304,7 +320,7 @@ function append_dream_cur_date() {
         import_chapt_to_part "${part_file}" "${chapt_dir}/${month_num}.tex"
     fi
 
-    insert_dream "$chapt_file" "blank title" "$day" "$month_let" "$year"
+    insert_dream "$chapt_file" "blank title" "$day" "$month_let" "$year" "$dn_path" "$dn_name"
 }
 
 # Compile with latexmk and output pdf. Run in one shot mode.
@@ -316,8 +332,6 @@ function output_pdf() {
     local main_tex_path="${dn_path}/${dn_name}/main.tex"
     cd "${dn_path}/${dn_name}"
     latexmk -C
-    #latexmk -pdf -f -quiet -pdflatex="pdflatex -interaction=nonstopmode" main.tex
-    #latexmk -pdf -quiet -pdflatex="pdflatex -interaction=nonstopmode" main.tex
     latexmk -pdf -quiet -f -pdflatex="pdflatex -interaction=nonstopmode" main.tex
     local texerror=$(rubber-info --errors main)
     local texwarn=$(rubber-info --warnings main)
@@ -337,6 +351,35 @@ function output_pdf() {
 
 #TODO : faire une variable pour le nom du fichier tex (main)
 #TODO : ne pas afficher texwarn si cette variable est vide.
+
+# $1 - Path of the dream note
+# $2 - Name of the dream note
+function snapshot() {
+    #function_body
+    local dn_path="$1"; shift
+    local dn_name="$1"; shift
+    local git_local="${dn_path}/${dn_name}"
+    local today_date=$(date +"%Y-%m-%d")
+    local new_file=""
+    local last_com_mess=""
+    local cur_com_mess=""
+    local num=0
+    local tmp_var=""
+
+    cd "$git_local"
+    # get untracked file and modified file in the working directory
+    new_file=$(git ls-files --other --modified --exclude-standard)
+    last_com_mess=$(git log -1 --pretty=format:'%s')
+    if [ -n "$new_file" ]; then
+        tmp_var=$(echo "$last_com_mess" | grep "$today_date")
+        if [ -n "$tmp_var" ]; then
+            num=$(echo "$last_com_mess" | grep -oP '(?<=\()[0-9]*(?=\))')
+        fi
+        let num++
+        cur_com_mess="Mise à jour du ${today_date} ($num)"
+        git add --all && git commit -m "${cur_com_mess}"
+    fi
+}
 
 ###############################################################################
 #                               Main function                                 #
@@ -372,7 +415,7 @@ function main() {
         t|test)
             # this case is only used for test purpose
             #import_part_to_main "${dream_note_path}/${dream_note_name}/main.tex" "${tex_contents}/2016/2016.tex"
-            append_dream_cur_date "21" "11" "novembre" "2016" "${!var_name[dn_path]}" "${!var_name[dn_name]}" "$tex_contents"
+            create_part_chapt "21" "11" "novembre" "2016" "${!var_name[dn_path]}" "${!var_name[dn_name]}" "$tex_contents"
             exit 0
             ;;
         i|init)
@@ -389,7 +432,7 @@ function main() {
                     exit 2
                 fi
             done
-            append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "${!var_name[dn_path]}" "${!var_name[dn_name]}" "$tex_contents"
+            create_part_chapt "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "${!var_name[dn_path]}" "${!var_name[dn_name]}" "$tex_contents"
             exit 0
             ;;
         A)
@@ -407,7 +450,7 @@ function main() {
                 today[month_number]=$(date -d "$OPTARG" '+%m')
                 today[month_letter]=$(date -d "$OPTARG" '+%B')
                 today[year]=$(date -d "$OPTARG" '+%Y')
-                append_dream_cur_date "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "${!var_name[dn_path]}" "${!var_name[dn_name]}" "$tex_contents"
+                create_part_chapt "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "${!var_name[dn_path]}" "${!var_name[dn_name]}" "$tex_contents"
                 true
             else
                 echo "Bad date format ! See help for more informations"
@@ -453,3 +496,4 @@ main "$@"
 # favorite text editor. $EDITOR need te be set te nvim or vim
 # install instruction: git clone and then add to path
 # if you want to create a new dream note, remove the ~/.dreamrc
+# fix the .gitignore of latex to not include pdf ptc...

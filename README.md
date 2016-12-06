@@ -42,8 +42,13 @@ Dreams are written each day (ideally) in chapters file (ex: 01.tex).
 
 ## How to use
 
+
+[//]: # (To insert the help from dreamnote file into the readme)
+[//]: # (:r! sed -n 19,43p ~/Documents/Dev/dream-note/dreamnote)
+
 ```
-	dreamnote [Option]
+	Usage:
+	$0 [Option]
 	A personal tool to create and manage my dream journal
 	
 	Options:
@@ -55,8 +60,8 @@ Dreams are written each day (ideally) in chapters file (ex: 01.tex).
 	-A <date>       Insert a dream at a user specified date. <date> must be in
 	                the YYYY-MM-DD format with YYYY=[0000;9999], MM=[01-12] and
 	                DD=[01-31].
-	-c              Compile the latex into a pdf with latexmk and the pdflatex 
-	                compiler and open the resulting pdf in the default
+    -c              Compile the main tex file into a pdf with latexmk and the
+                    pdflatex compiler and open the resulting pdf in the default
 	                previewer.
 	                
 	Informations:
@@ -65,12 +70,12 @@ Dreams are written each day (ideally) in chapters file (ex: 01.tex).
 	When Initializing [-i <name>] a dream note a dotfile named .dreamrc is
 	created in the users home directory. It contains the <name> of the dream
 	note and the directory of the dream note. Only one dream note can be
-	created.
+	created. If you want to start over a new dream journal, delete ~/.dreamrc
+    and initialize a new dream journal.
 ```
 
 ## TODO
 
-* Automatic version control of the dream note using git
 * Add an option to search the dream note for specific dreams containing
 specific keywords.
 * Add an option to output statistic about the dreams (total number of dreams,
