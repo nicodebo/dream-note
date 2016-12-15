@@ -24,15 +24,15 @@ function usage () {
 	-h, -help       Display this help message and exit
 	-v, -version    Display script version and exit
 	-i <name>       Initialize a dream note named <name> in the current
-					directory
+	                directory
 	-a              Insert a dream at the current date in the dream note
 	-A <date>       Insert a dream at a user specified date. <date> must be in
 	                the YYYY-MM-DD format with YYYY=[0000;9999], MM=[01-12] and
 	                DD=[01-31].
-    -c              Compile the main tex file into a pdf with latexmk and the
-                    pdflatex compiler and open the resulting pdf in the default
+	-c              Compile the main tex file into a pdf with latexmk and the
+	                pdflatex compiler and open the resulting pdf in the default
 	                previewer.
-	                
+	
 	Informations:
 	The dream note is edited as a latex document based on "The Legrand Orange
 	Book" (http://www.latextemplates.com/template/the-legrand-orange-book).
@@ -40,7 +40,7 @@ function usage () {
 	created in the users home directory. It contains the <name> of the dream
 	note and the directory of the dream note. Only one dream note can be
 	created. If you want to start over a new dream journal, delete ~/.dreamrc
-    and initialize a new dream journal.
+	and initialize a new dream journal.
 	EOF
 }
 
@@ -107,14 +107,18 @@ function initialize() {
         echo "Creating a configuration file ($dotfile_path)…"
         write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
         wget -O .gitignore https://www.gitignore.io/api/latex
+
+        cat <<-EOT >> .gitignore
+		
+		# added files
+		main.pdf
+		*.ptc
+		EOT
+
         git init
         git add -A && git commit -m "dream journal initialization"
     fi
 }
-
-#TODO : cut down the initialize into functions
-#TODO : erase the content of the bibliography.bib. keep the insert
-#bibliography.
 
 # This function import a part.tex (ex: 2016.tex) to the main.tex document.
 # $1 - Path of the main.tex of dreamnote.
@@ -134,11 +138,11 @@ function import_part_to_main() {
     local imported_parts_new
     
     if [ -z "$imported_parts_old" ]; then
-        echo "empty"
+        #echo "empty"
         import_part_cur=$( echo "${import_part_cur}" | sed 's,\\,\\\\\\,' )
         sed -i "/^\\\end{document}/i ${import_part_cur}\n" "$maintex_path"
     else
-        echo "find"
+        #echo "find"
         imported_parts_new="$imported_parts_old"$'\n'"${import_part_cur}"
         imported_parts_new=$( echo "${imported_parts_new}" | sort -u )
         imported_parts_new=$( echo "${imported_parts_new}" | sed 's/\\/\\\\/')
@@ -164,14 +168,14 @@ function import_chapt_to_part() {
     local input_chapt_new
     
     if [ -z "$input_chapt_old" ]; then
-        echo "empty: no chapter found"
+        #echo "empty: no chapter found"
         cat <<-EOT >> "${part_path}"
 		
 		${input_chapt_cur}
 		
 		EOT
     else
-        echo "find: chapter found"
+        #echo "find: chapter found"
         input_chapt_new="$input_chapt_old"$'\n'"${input_chapt_cur}"
         input_chapt_new=$( echo "${input_chapt_new}" | sort -u )
         input_chapt_new=$( echo "${input_chapt_new}" | sed 's/\\/\\\\/')
@@ -210,15 +214,14 @@ function insert_dream() {
     local sect_below # section below the one to be inserted
     local sect_above # section above the one to be inserted
     
-    echo "$section_old"
     if [ -z "$section_old" ]; then
-        echo "empty: no dream found"
+        #echo "empty: no dream found"
         echo "$dream_cur" >> "$chapt_path"
         "$EDITOR" "$chapt_path" -c 'normal Go'
     else
-        echo "find: dream found"
+        #echo "find: dream found"
         tmp_var=$(cat "$chapt_path" | grep -n "$(echo ${section_cur} | sed 's/\\/\\\\/')")
-        echo "$tmp_var"
+        #echo "$tmp_var"
         if [ -n "$tmp_var" ]; then
             echo "This dream section already exists !"
             cur_line=$(echo "$tmp_var" | cut -d : -f 1)
@@ -235,9 +238,9 @@ function insert_dream() {
             section_new=$( echo "${section_new}" | sort -u )
             section_cur=$( echo "${section_cur}" | sed 's/\\/\\\\/')
             sect_below=$(echo "${section_new}" | grep -A 1 "${section_cur}" | tail -n +2)
-            echo "section below: ${sect_below}"
+            #echo "section below: ${sect_below}"
             sect_above=$(echo "${section_new}" | grep -B 1 "${section_cur}" | head -n -1)
-            echo "section above: $sect_above"
+            #echo "section above: $sect_above"
             if [ -n "$sect_above" ] && [ -z "$sect_below" ]; then
                 dream_cur="${sepline}"$'\n'"${dream_cur}"
                 echo "$dream_cur" >> "$chapt_path"
@@ -247,7 +250,7 @@ function insert_dream() {
                 echo "Please fix $chapt_path"
             else
                 dream_cur="${dream_cur}"$'\n'"${sepline}" 
-                echo "$dream_cur"
+                #echo "$dream_cur"
                 dream_cur=$( echo "${dream_cur}" | sed 's,^\\,\\\\\\,' )
                 sect_below=$( echo "${sect_below}" | sed 's,\\,\\\\,' )
                 while read -r line; do
@@ -261,8 +264,6 @@ function insert_dream() {
     fi
     snapshot "$dn_path" "$dn_name"
 }
-
-# TODO: http://stackoverflow.com/questions/5139290/how-to-check-if-theres-nothing-to-be-committed-in-the-current-branch
 
 # This function append a new dream template to the end of the latex document at
 # the current date.
@@ -317,6 +318,7 @@ function create_part_chapt() {
 		%   DREAMS
 		%------------------------------------------------------------------------------
 		EOT
+
         import_chapt_to_part "${part_file}" "${chapt_dir}/${month_num}.tex"
     fi
 
@@ -491,9 +493,3 @@ main "$@"
 # \usepackage[english]{babel} % Replace english by french ?
 # voir les usepackage utilisé dans mon autre carnet de rêve.
 # ecrire des tests avec bats pour prendre en main bats.
-# requirements: git, wget, latex distribution, latexmk, date (gnu tools),
-# internet connection for initialization, unzip, perl, rubber, (neo)vim my
-# favorite text editor. $EDITOR need te be set te nvim or vim
-# install instruction: git clone and then add to path
-# if you want to create a new dream note, remove the ~/.dreamrc
-# fix the .gitignore of latex to not include pdf ptc...

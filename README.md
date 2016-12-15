@@ -55,15 +55,15 @@ Dreams are written each day (ideally) in chapters file (ex: 01.tex).
 	-h, -help       Display this help message and exit
 	-v, -version    Display script version and exit
 	-i <name>       Initialize a dream note named <name> in the current
-					directory
+	                directory
 	-a              Insert a dream at the current date in the dream note
 	-A <date>       Insert a dream at a user specified date. <date> must be in
 	                the YYYY-MM-DD format with YYYY=[0000;9999], MM=[01-12] and
 	                DD=[01-31].
-    -c              Compile the main tex file into a pdf with latexmk and the
-                    pdflatex compiler and open the resulting pdf in the default
+	-c              Compile the main tex file into a pdf with latexmk and the
+	                pdflatex compiler and open the resulting pdf in the default
 	                previewer.
-	                
+	
 	Informations:
 	The dream note is edited as a latex document based on "The Legrand Orange
 	Book" (http://www.latextemplates.com/template/the-legrand-orange-book).
@@ -71,8 +71,20 @@ Dreams are written each day (ideally) in chapters file (ex: 01.tex).
 	created in the users home directory. It contains the <name> of the dream
 	note and the directory of the dream note. Only one dream note can be
 	created. If you want to start over a new dream journal, delete ~/.dreamrc
-    and initialize a new dream journal.
+	and initialize a new dream journal.
 ```
+
+## How to install ?
+
+1. The script depends on the following programs
+
+ git (set up with a name and an email address), wget, unzip, perl, rubber, (neo)vim, TeXLive, latexmk
+
+2. $EDITOR variable need to be set to "vim" or "nvim
+
+3. Clone this repository and add the path of the `dreamnote` script to make it
+available from everywhere.
+
 
 ## TODO
 
