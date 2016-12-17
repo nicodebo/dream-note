@@ -32,6 +32,7 @@ function usage () {
 	-c              Compile the main tex file into a pdf with latexmk and the
 	                pdflatex compiler and open the resulting pdf in the default
 	                previewer.
+	-s              Compute and display some dream informations
 	
 	Informations:
 	The dream note is edited as a latex document based on "The Legrand Orange
@@ -406,12 +407,13 @@ function main() {
     var_name[dn_path]="dream_note_path"
     var_name[dn_name]="dream_note_name"
     local regex_date="^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$"
-    
+    local py_stat_dir="${SCRIPT_DIR}/lib/dreamnote/stat"
+
     if [ -f "$dotfile_path" ]; then
         source "$dotfile_path"
     fi
     
-    while getopts ":hvi:taA:c" opt
+    while getopts ":hvi:taA:cs" opt
     do
       case $opt in
         t|test)
@@ -469,6 +471,19 @@ function main() {
             ;;
         v|version)
             echo "$0 -- Version $__ScriptVersion"
+            exit 0
+            ;;
+        s)
+            for var in "${var_name[@]}"; do
+                if [ -n "${!var}" ]; then
+                    true
+                else
+                    echo "$var not set (or empty)"
+                    echo "Could not create a new dream!"
+                    exit 2
+                fi
+            done
+            "$py_stat_dir" "${!var_name[dn_path]}/${!var_name[dn_name]}/${tex_contents}" 
             exit 0
             ;;
         \?)
