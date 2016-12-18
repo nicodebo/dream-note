@@ -508,3 +508,4 @@ main "$@"
 # \usepackage[english]{babel} % Replace english by french ?
 # voir les usepackage utilisé dans mon autre carnet de rêve.
 # ecrire des tests avec bats pour prendre en main bats.
+# TODO : Put all the function into a separate file in lib/dreamnote dir
