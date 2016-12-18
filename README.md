@@ -63,6 +63,7 @@ Dreams are written each day (ideally) in chapters file (ex: 01.tex).
 	-c              Compile the main tex file into a pdf with latexmk and the
 	                pdflatex compiler and open the resulting pdf in the default
 	                previewer.
+	-s              Compute and display some dream informations
 	
 	Informations:
 	The dream note is edited as a latex document based on "The Legrand Orange
@@ -90,7 +91,6 @@ available from everywhere.
 
 * Add an option to search the dream note for specific dreams containing
 specific keywords.
-* Add an option to output statistic about the dreams (total number of dreams,
-histogram by months, ...)
+* stat: draw graph of cumulated sum of dream through the time ? by year ?
 * Add an option to add a package in the preamble and use this function to add 
 the import package.
