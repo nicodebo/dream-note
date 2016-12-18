@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# Path of my custom program installation
+CUST_BIN_DIR="${HOME}/bin"
+
+cp --parents dreamnote "${CUST_BIN_DIR}"
+cp --parents lib/dreamnote/* "${CUST_BIN_DIR}"
+
+# TODO: CUST_BIN_DIR as a parameter to the install function so that the user
+# can install it to whatever directory.
+# TODO: Check if CUST_BIN_DIR is in the $PATH. If not warn the user. I don't
+# want to mess with $PATH variable of the user so prompt him commands to do it.
+# either export or add it to bashrc zshrc or whatever.
