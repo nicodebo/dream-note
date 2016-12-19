@@ -18,12 +18,12 @@ function main() {
     cp --parents dreamnote "${cust_bin_dir}"
     cp --parents lib/dreamnote/* "${cust_bin_dir}"
     
-	if [[ :$PATH: == *:"${cust_bin_dir}":* ]] ; then
-	    echo "\"${cust_bin_dir}\" directory is in the \"\$PATH\""
-	else
-		echo "You need to add \"${cust_bin_dir}\" into your \"\$PATH\":"
+    if [[ :$PATH: == *:"${cust_bin_dir}":* ]] ; then
+        echo "\"${cust_bin_dir}\" directory is in the \"\$PATH\""
+    else
+        echo "You need to add \"${cust_bin_dir}\" into your \"\$PATH\":"
         echo "see http://unix.stackexchange.com/questions/26047/how-to-correctly-add-a-path-to-path"
-	fi
+    fi
 }
 
 ###############################################################################
