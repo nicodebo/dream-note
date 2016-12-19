@@ -10,11 +10,6 @@
 #set -o xtrace     # verbose
 
 ###############################################################################
-#                              Source functions                               #
-###############################################################################
-source ./lib/dreamnote/functions.sh
-
-###############################################################################
 #                               Main function                                 #
 ###############################################################################
 
@@ -38,6 +33,8 @@ function main() {
     var_name[dn_name]="dream_note_name"
     local regex_date="^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$"
     local py_stat_dir="${SCRIPT_DIR}/lib/dreamnote/stat.py"
+
+    source "${SCRIPT_DIR}/lib/dreamnote/functions.sh"
 
     if [ -f "$dotfile_path" ]; then
         source "$dotfile_path"
@@ -122,7 +119,6 @@ function main() {
 ###############################################################################
 #                                Launch Main                                  #
 ###############################################################################
-
 main "$@"
 
 # \usepackage[english]{babel} % Replace english by french ?
