@@ -77,14 +77,23 @@ Dreams are written each day (ideally) in chapters file (ex: 01.tex).
 
 ## How to install ?
 
-1. The script depends on the following programs
+1. The script depends on the following tools:
 
- git (set up with a name and an email address), wget, unzip, perl, rubber, (neo)vim, TeXLive, latexmk
+    git (set up with a name and an email address), wget, unzip, perl, rubber, (neo)vim, TeXLive, latexmk
 
-2. $EDITOR variable need to be set to "vim" or "nvim
+2. $EDITOR variable need to be set to nvim (or vim):
 
-3. Clone this repository and add the path of the `dreamnote` script to make it
-available from everywhere.
+        ```export EDITOR='nvim'```
+
+3. Clone this repository and launch the install script:
+
+    ```
+    git clone https://github.com/nicodebo/dream-note
+    cd dream-note
+    ./install ~/bin
+    ```
+
+    Where ```~/bin``` is the directory where I install my custom scripts. Change accordingly.
 
 
 ## TODO
