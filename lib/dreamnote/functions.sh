@@ -11,7 +11,6 @@ function usage () {
 	
 	Options:
 	-h, -help       Display this help message and exit
-	-v, -version    Display script version and exit
 	-i <name>       Initialize a dream note named <name> in the current
 	                directory
 	-a              Insert a dream at the current date in the dream note
