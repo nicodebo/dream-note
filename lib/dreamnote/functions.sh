@@ -46,7 +46,7 @@ function write_conf() {
     local dn_name="$1"; shift
     local dn_path_var_name="$1"; shift
     local dn_name_var_name="$1"; shift
-    
+
     cat <<-EOT >> "${dotfile_path}"
 	# ${dotfile_path} : dreamnote configuration file
 	
@@ -77,13 +77,13 @@ function initialize() {
     local dn_name="$1"; shift
     local dn_path_var_name="$1"; shift
     local dn_name_var_name="$1"; shift
-    
+
     if [ -s "$dotfile_path" ]; then
         echo 'a dreamnote already exists !'
     else
         echo 'Initializing dream note…'
         filename=$(basename "$url")
-        wget -N "$url"
+        curl -O "$url"
         unzip "$filename" -d "$dn_name"
         cd "$dn_name"
         firstline=$(grep -n -m 1 -E '^\\(part|chapter|section){' main.tex | cut -d : -f 1)
@@ -91,11 +91,11 @@ function initialize() {
         let lastline=lastline-1
         sed -i main.tex -re "$firstline,${lastline}d"
         sed -i '/\\\input{structure}/a \\\usepackage{import}' main.tex
-        mkdir "$tex_contents" 
+        mkdir "$tex_contents"
         #:> bibliography.bib
         echo "Creating a configuration file ($dotfile_path)…"
         write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
-        wget -O .gitignore https://www.gitignore.io/api/latex
+        curl -o .gitignore https://www.gitignore.io/api/latex
 
         cat <<-EOT >> .gitignore
 		
@@ -116,16 +116,16 @@ function initialize() {
 function import_part_to_main() {
     local maintex_path="$1"; shift
     local part_path="$1"; shift
-    
+
     local filename=$(basename "${part_path}")
     filename="${filename%.*}"
     local dirname=$(dirname "${part_path}")
     dirname="${dirname}/"
     local import_part_cur="\subimport{${dirname}}{${filename}}"
-    
+
     local imported_parts_old=$(grep '^\\subimport{' "$maintex_path") # TODO: compléter la pattern pour éviter
     local imported_parts_new
-    
+
     if [ -z "$imported_parts_old" ]; then
         #echo "empty"
         import_part_cur=$( echo "${import_part_cur}" | sed 's,\\,\\\\\\,' )
@@ -146,16 +146,16 @@ function import_part_to_main() {
 function import_chapt_to_part() {
     local part_path="$1"; shift
     local chapt_path="$1"; shift
-    
+
     local filename=$(basename "${chapt_path}")
     filename="${filename%.*}"
     local dirname=$(dirname "${chapt_path}")
     dirname="${dirname}/"
     local input_chapt_cur="\input{${dirname}${filename}}"
-    
+
     local input_chapt_old=$(grep '^\\input{' "$part_path") # TODO: compléter la pattern pour éviter
     local input_chapt_new
-    
+
     if [ -z "$input_chapt_old" ]; then
         #echo "empty: no chapter found"
         cat <<-EOT >> "${part_path}"
@@ -189,11 +189,11 @@ function insert_dream() {
     local year="$1"; shift
     local dn_path="$1"; shift
     local dn_name="$1"; shift
-    
+
     local section_cur="\section{${day} ${month_let} ${year}}"
     local subsection_cur="\subsection{${dream_title}}"
     local dream_cur="${section_cur}"$'\n'"${subsection_cur}"
-    
+
     local section_old=$(grep '^\\section{' "$chapt_path") # day already filled.
     local section_new
     local sect_cur_pos # Section to insert the current dream above.
@@ -202,7 +202,7 @@ function insert_dream() {
     local tmp_var
     local sect_below # section below the one to be inserted
     local sect_above # section above the one to be inserted
-    
+
     if [ -z "$section_old" ]; then
         #echo "empty: no dream found"
         echo "$dream_cur" >> "$chapt_path"
@@ -238,7 +238,7 @@ function insert_dream() {
                 echo "Error: Nothing below and nothing above !"
                 echo "Please fix $chapt_path"
             else
-                dream_cur="${dream_cur}"$'\n'"${sepline}" 
+                dream_cur="${dream_cur}"$'\n'"${sepline}"
                 #echo "$dream_cur"
                 dream_cur=$( echo "${dream_cur}" | sed 's,^\\,\\\\\\,' )
                 sect_below=$( echo "${sect_below}" | sed 's,\\,\\\\,' )
@@ -271,12 +271,12 @@ function create_part_chapt() {
     local dn_path="$1"; shift
     local dn_name="$1"; shift
     local tex_contents="$1"; shift
-    
+
     local chapt_dir='chapters'
     local chapter_dir="${dn_path}/${dn_name}/${tex_contents}/${year}/${chapt_dir}"
     local part_file="${dn_path}/${dn_name}/${tex_contents}/${year}/${year}.tex"
     local chapt_file="${dn_path}/${dn_name}/${tex_contents}/${year}/${chapt_dir}/${month_num}.tex"
-    
+
     if [ ! -e "$part_file" ] ; then
         mkdir -p "$chapter_dir"
         cat <<-EOT >> "${part_file}"
