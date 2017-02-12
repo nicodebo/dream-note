@@ -81,10 +81,12 @@ function initialize() {
     if [ -s "$dotfile_path" ]; then
         echo 'a dreamnote already exists !'
     else
-        echo 'Initializing dream note…'
+        echo 'Initializing dream note...'
         filename=$(basename "$url")
-        curl -O "$url"
-        unzip "$filename" -d "$dn_name"
+        local tmpdir=$(mktemp -d "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")
+	local ziploc="${tmpdir}/${filename}"
+        curl -o "$ziploc" "$url"
+        unzip "$ziploc" -d "$dn_name"
         cd "$dn_name"
         firstline=$(grep -n -m 1 -E '^\\(part|chapter|section){' main.tex | cut -d : -f 1)
         lastline=$(grep -n '^\\end{document}' main.tex | cut -d : -f 1)
@@ -93,8 +95,8 @@ function initialize() {
         sed -i '/\\\input{structure}/a \\\usepackage{import}' main.tex
         mkdir "$tex_contents"
         #:> bibliography.bib
-        echo "Creating a configuration file ($dotfile_path)…"
-        write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
+        echo "Creating a configuration file ($dotfile_path)..."
+        #write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
         curl -o .gitignore https://www.gitignore.io/api/latex
 
         cat <<-EOT >> .gitignore
