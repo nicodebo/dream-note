@@ -20,8 +20,8 @@ function main() {
     local SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     local template=http://www.latextemplates.com/templates/books/2/book_2.zip
     local current_dir=$(pwd)
-    local dotfile_name='.dreamrc'
-    local dotfile_path="${HOME}/${dotfile_name}"
+    local dotfile_name='dreamrc'
+    local dotfile_path="${HOME}/.config/dreamnote/${dotfile_name}"
     local tex_contents="contents"
     local -A today
     today[day]=$(date +"%d")

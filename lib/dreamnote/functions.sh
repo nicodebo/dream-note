@@ -47,6 +47,8 @@ function write_conf() {
     local dn_path_var_name="$1"; shift
     local dn_name_var_name="$1"; shift
 
+    mkdir -p "$(dirname "$dotfile_path")"
+
     cat <<-EOT >> "${dotfile_path}"
 	# ${dotfile_path} : dreamnote configuration file
 	
@@ -96,7 +98,7 @@ function initialize() {
         mkdir "$tex_contents"
         #:> bibliography.bib
         echo "Creating a configuration file ($dotfile_path)..."
-        #write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
+	write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
         curl -o .gitignore https://www.gitignore.io/api/latex
 
         cat <<-EOT >> .gitignore
