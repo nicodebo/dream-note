@@ -21,7 +21,11 @@ function main() {
     local template=http://www.latextemplates.com/templates/books/2/book_2.zip
     local current_dir=$(pwd)
     local dotfile_name='dreamrc'
-    local dotfile_path="${HOME}/.config/dreamnote/${dotfile_name}"
+    if [ -z ${XDG_CONFIG_HOME+x} ] || [ -z "$XDG_CONFIG_HOME" ]; then
+      local dotfile_path="${HOME}/.config/dreamnote/${dotfile_name}"
+    else 
+      local dotfile_path="${XDG_CONFIG_HOME}/dreamnote/${dotfile_name}"
+    fi
     local tex_contents="contents"
     local -A today
     today[day]=$(date +"%d")
