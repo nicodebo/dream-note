@@ -87,6 +87,8 @@ function initialize() {
         filename=$(basename "$url")
         local tmpdir=$(mktemp -d "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")
 	local ziploc="${tmpdir}/${filename}"
+        hash curl 2>/dev/null || { echo >&2 "I require curl but it's not installed.  Aborting."; exit 1; }
+        hash unzip 2>/dev/null || { echo >&2 "I require unzip but it's not installed.  Aborting."; exit 1; }
         curl -o "$ziploc" "$url"
         unzip "$ziploc" -d "$dn_name"
         cd "$dn_name"
@@ -326,11 +328,14 @@ function output_pdf() {
     local dn_name="$1"; shift
     local main_tex_path="${dn_path}/${dn_name}/main.tex"
     cd "${dn_path}/${dn_name}"
+
+    hash latexmk 2>/dev/null || { echo >&2 "I require latexmk but it's not installed.  Aborting."; exit 1; }
     latexmk -C
     latexmk -pdf -quiet -f -pdflatex="pdflatex -interaction=nonstopmode" main.tex
     local texerror=$(rubber-info --errors main)
     local texwarn=$(rubber-info --warnings main)
     if [ -z "$texerror" ]; then
+        hash xdg-open 2>/dev/null || { echo >&2 "I require xdg-open but it's not installed.  Aborting."; exit 1; }
         xdg-open main.pdf
         echo "################################################################"
         echo "#                          Warnings                            #"
