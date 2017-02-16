@@ -85,6 +85,7 @@ function initialize() {
     else
         echo 'Initializing dream note...'
         filename=$(basename "$url")
+        # TODO: filename should be a local variable 
         local tmpdir=$(mktemp -d "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")
 	local ziploc="${tmpdir}/${filename}"
         hash curl 2>/dev/null || { echo >&2 "I require curl but it's not installed.  Aborting."; exit 1; }
@@ -109,9 +110,7 @@ function initialize() {
 		main.pdf
 		*.ptc
 		EOT
-
-        git init
-        git add -A && git commit -m "dream journal initialization"
+        snapshot "$cur_dir" "$dn_name"
     fi
 }
 
@@ -355,7 +354,6 @@ function output_pdf() {
 # $1 - Path of the dream note
 # $2 - Name of the dream note
 function snapshot() {
-    #function_body
     local dn_path="$1"; shift
     local dn_name="$1"; shift
     local git_local="${dn_path}/${dn_name}"
@@ -366,17 +364,30 @@ function snapshot() {
     local num=0
     local tmp_var=""
 
-    cd "$git_local"
-    # get untracked file and modified file in the working directory
-    new_file=$(git ls-files --other --modified --exclude-standard)
-    last_com_mess=$(git log -1 --pretty=format:'%s')
-    if [ -n "$new_file" ]; then
-        tmp_var=$(echo "$last_com_mess" | grep "$today_date")
-        if [ -n "$tmp_var" ]; then
-            num=$(echo "$last_com_mess" | grep -oP '(?<=\()[0-9]*(?=\))')
+    # if git is installed and is configured with an name and an email
+    if hash git 2> /dev/null \
+      && git config --get user.name > /dev/null 2>&1 \
+      && git config --get user.email > /dev/null 2>&1; then
+      cd "$git_local"
+      if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+        # get untracked file and modified file in the working directory
+        new_file=$(git ls-files --other --modified --exclude-standard)
+        last_com_mess=$(git log -1 --pretty=format:'%s')
+        if [ -n "$new_file" ]; then
+            tmp_var=$(echo "$last_com_mess" | grep "$today_date")
+            if [ -n "$tmp_var" ]; then
+                num=$(echo "$last_com_mess" | grep -oP '(?<=\()[0-9]*(?=\))')
+            fi
+            let num++
+            cur_com_mess="Mise à jour du ${today_date} ($num)"
+            git add --all && git commit -m "${cur_com_mess}"
         fi
-        let num++
-        cur_com_mess="Mise à jour du ${today_date} ($num)"
-        git add --all && git commit -m "${cur_com_mess}"
+      else
+        git init
+        git add -A && git commit -m "dream journal initialization"
+      fi
+    else
+      echo "git is not installed and/or set up with an name and email" 
+      echo "install git and/or set it up with a name and an email" 
     fi
 }
