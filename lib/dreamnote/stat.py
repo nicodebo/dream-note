@@ -9,7 +9,6 @@ import os
 import re
 import traceback
 import pandas as pd
-import subprocess
 
 ###############################################################################
 #                                  Functions                                  #
@@ -91,6 +90,7 @@ def main():
     :returns: TODO
 
     """
+
     dream_type_freq = {}
     # read argument: path of the dreamrc file.
     contents_dir = sys.argv[-1]
@@ -99,18 +99,27 @@ def main():
         dream_type_freq.update(read_chapter(chapt))
 
     df = pd.DataFrame.from_dict(dream_type_freq, orient='index')
-    subprocess.call("echo 'Dream stat' | boxes -d shell -s 80x5 -a hcvc",
-                    shell=True)
+
+    sizebox = len(str(df.values.sum())) + 32 
+
     message = """
-    -------------------------------
-    Number of normal dreams    : {}
-    Number of pre lucid dreams : {}
-    Number of lucid dreams     : {}
-    ===============================
-    Total number of dreams     : {}
-    """.format(df['n'].sum(), df['pl'].sum(), df['l'].sum(), df.values.sum())
+    {}
+     Dream Statistics
+    {}
+     Number of normal dreams       {}
+     Number of pre lucid dreams    {}
+     Number of lucid dreams        {}
+    {}
+     Total number of dreams        {}
+    """.format("-" * sizebox, 
+               "-" * sizebox,
+               df['n'].sum(),
+               df['pl'].sum(),
+               df['l'].sum(),
+               "=" * sizebox,
+               df.values.sum())
     print(message)
-    print(df)
+    # print(df)
     # period range
     # missed days
     # graph: cumsum vs date (for each year ? treillis ?)

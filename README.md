@@ -14,19 +14,20 @@ Template](http://www.latextemplates.com/template/the-legrand-orange-book).
 ## How to install ?
 
 1.  The script depends on the following tools:
-    1.  vim or neovim (required)
-    1.  curl (used to download the template) (required)
-    1.  unzip (used to extract the template archive) (required)
-    1.  perl (used for some text processing tasks) (required)
-    1.  TexLive (the typesetting system) (required)
-    1.  latexmk (automatically installed with the latest TeXLive) (required)
-    1.  xdg-utils (used to open the pdf) (optional)
-    1.  git (set up with a name and an email address) (optional)
-        It is used for automatic version control of the LaTeX sources
-    1.  rubber (used to parse compilation error log) (optional)
+    *  python 3.6
+    *  vim or neovim (required)
+    *  curl (used to download the template) (required)
+    *  unzip (used to extract the template archive) (required)
+    *  perl (used for some text processing tasks) (required)
+    *  texlive (the typesetting system) (required)
+    *  latexmk (automatically installed with the latest TeXLive) (required)
+    *  xdg-utils (used to open the pdf) (optional)
+    *  git (set up with a name and an email address) (optional)
+    *  rubber (used to parse compilation error log) (optional)
+    *  virtualenvwrapper (used to install necessary python library) (required)
 
-    For exemple `pacman -S neovim curl unzip perl texlive-most xdg-utils git
-    rubber`
+    For exemple on archlinux: `pacman -S neovim curl unzip perl texlive-most xdg-utils git
+    rubber python-virtualenvwrapper`
 
 2. Clone this repository and launch the install script:
 
@@ -144,20 +145,16 @@ Dreams are written each day (ideally) in chapters file (ex: 01.tex).
 <!--* find recurring dream themes by doing some word count stat ?-->
 <!--* write a git commit description that check the newly added dreams (section-->
   <!--and/or subsection)-->
-<!--* check if the tools are here before doing operation.-->
 <!--* check if $EDITOR is equal to vim or nvim. Otherwise just open the file-->
   <!--normaly with $EDITOR, if it is empty put a warning message-->
   <!--or use $EDITOR only if not vim or nvim.-->
 <!--* in usage, strip the $0 to only get the last part-->
 <!--* remove that perl dependency-->
-<!--* Turn the whole project into a python instead of bash ? I should have started-->
-  <!--with python instead of having parts with python and parts with bash.-->
 <!--* Do you wish to edit the dream anyway ? : make yes the default choice.-->
 <!--* README.md :-->
   <!--* add cc 3.0 license ? Not sure since I'm just downloading the template from-->
     <!--the source https://creativecommons.org/licenses/by-nc-sa/3.0/fr/#. No, the-->
     <!--licence is in the latex source. Just add an MIT licence to my project.-->
-  <!--* remove latexmk as dependency since it comes with TeXlive-->
   <!--* add python3 dependency and pandas library or better: use only the base-->
     <!--python library-->
   <!--* Add hyperlink to each dependency-->
@@ -168,8 +165,6 @@ Dreams are written each day (ideally) in chapters file (ex: 01.tex).
   <!--* test if curl, latexmk, xdg-open, unzip are not install, the program work as-->
     <!--expected.-->
   <!--* make some bats tests. It's becomming hazardous to modify without tests and-->
-    <!--link to travisCI just for fun and to learn the process (or maybe docker for-->
-    <!--local testing, or maybe both for learning as I don't know much about testing ^^-->
 <!--* Add uninstall function-->
 <!--* fix mixed indentation-->
-<!--* indentation = 4 spaces is more readable than 2. Switch back to 4-->
+<!--* Always check return code of command ? : https://github.com/robbyrussell/oh-my-zsh/wiki/Coding-style-guide-->

@@ -104,7 +104,10 @@ function main() {
                     exit 2
                 fi
             done
+            source `which virtualenvwrapper.sh` || exit 1
+            workon dream-note
             "$py_stat_dir" "${!var_name[dn_path]}/${!var_name[dn_name]}/${tex_contents}" 
+            deactivate
             exit 0
             ;;
         \?)
