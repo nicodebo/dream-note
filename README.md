@@ -153,17 +153,17 @@ Dreams are written each day (ideally) in chapters file (ex: 01.tex).
 <!--* Do you wish to edit the dream anyway ? : make yes the default choice.-->
 <!--* README.md :-->
   <!--* add cc 3.0 license ? Not sure since I'm just downloading the template from-->
-    <!--the source https://creativecommons.org/licenses/by-nc-sa/3.0/fr/#. No, the-->
-    <!--licence is in the latex source. Just add an MIT licence to my project.-->
+   <!--the source https://creativecommons.org/licenses/by-nc-sa/3.0/fr/#. No, the-->
+   <!--licence is in the latex source. Just add an MIT licence to my project.-->
   <!--* add python3 dependency and pandas library or better: use only the base-->
-    <!--python library-->
+   <!--python library-->
   <!--* Add hyperlink to each dependency-->
   <!--* Add a use case for dreamnote -A and dreamnote -s-->
   <!--* Write texlive consistently-->
   <!--* Add a animated gif ?-->
 <!--* Tests :-->
   <!--* test if curl, latexmk, xdg-open, unzip are not install, the program work as-->
-    <!--expected.-->
+   <!--expected.-->
   <!--* make some bats tests. It's becomming hazardous to modify without tests and-->
 <!--* Add uninstall function-->
 <!--* fix mixed indentation-->
