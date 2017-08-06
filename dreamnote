@@ -17,15 +17,12 @@
 # allow to handle the command line arguments.
 function main() {
     local __ScriptVersion="1"
+    local xdg_config="${XDG_CONFIG_HOME:-$HOME/.config}"
+    local config_file="${xdg_config}/dreamnote/dreamrc"
     local SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     local template=http://www.latextemplates.com/templates/books/2/book_2.zip
     local current_dir=$(pwd)
     local dotfile_name='dreamrc'
-    if [ -z ${XDG_CONFIG_HOME+x} ] || [ -z "$XDG_CONFIG_HOME" ]; then
-      local dotfile_path="${HOME}/.config/dreamnote/${dotfile_name}"
-    else 
-      local dotfile_path="${XDG_CONFIG_HOME}/dreamnote/${dotfile_name}"
-    fi
     local tex_contents="contents"
     local -A today
     today[day]=$(date +"%d")
@@ -38,17 +35,20 @@ function main() {
     local regex_date="^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$"
     local py_stat_dir="${SCRIPT_DIR}/lib/dreamnote/stat.py"
 
-    source "${SCRIPT_DIR}/lib/dreamnote/functions.sh"
+    # source "${SCRIPT_DIR}/lib/dreamnote/functions.sh"
 
-    if [ -f "$dotfile_path" ]; then
-        source "$dotfile_path"
+    if [ -f "$config_file" ]; then
+        source "$config_file"
+    else
+        echo "No configuration file found!"
+        exit 1
     fi
     
     while getopts ":hi:aA:cs" opt
     do
       case $opt in
         i|init)
-            initialize "$template" "$tex_contents" "$current_dir" "$dotfile_path" "$OPTARG" "${var_name[dn_path]}" "${var_name[dn_name]}"
+            initialize "$template" "$tex_contents" "$current_dir" "$config_file" "$OPTARG" "${var_name[dn_path]}" "${var_name[dn_name]}"
             exit 0
             ;;
         a|add)
