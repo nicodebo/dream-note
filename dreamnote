@@ -4,10 +4,10 @@
 #                          Script execution options                           #
 ###############################################################################
 
-#set -o errexit    # exit when a command fails
-#set -o pipefail
-#set -o nounset    # exit when using undeclared variable
-#set -o xtrace     # verbose
+set -o errexit    # exit when a command fails
+# set -o pipefail
+# set -o nounset    # exit when using undeclared variable
+# set -o xtrace     # verbose
 
 ###############################################################################
 #                               Main function                                 #
@@ -16,13 +16,21 @@
 # The main function contains variable definition and the getopts loop that
 # allow to handle the command line arguments.
 function main() {
-    local __ScriptVersion="1"
+    # find main script directory
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+      DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+      SOURCE="$(readlink "$SOURCE")"
+      [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+    done
+    DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
     local xdg_config="${XDG_CONFIG_HOME:-$HOME/.config}"
     local config_file="${xdg_config}/dreamnote/dreamrc"
-    local SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    local py_stat_dir="${DIR}/lib/stat.py"
+    local __ScriptVersion="1"
     local template=http://www.latextemplates.com/templates/books/2/book_2.zip
     local current_dir=$(pwd)
-    local dotfile_name='dreamrc'
     local tex_contents="contents"
     local -A today
     today[day]=$(date +"%d")
@@ -33,14 +41,13 @@ function main() {
     var_name[dn_path]="dream_note_path"
     var_name[dn_name]="dream_note_name"
     local regex_date="^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$"
-    local py_stat_dir="${SCRIPT_DIR}/lib/dreamnote/stat.py"
 
-    # source "${SCRIPT_DIR}/lib/dreamnote/functions.sh"
+    source "${DIR}/lib/functions.sh"
 
     if [ -f "$config_file" ]; then
         source "$config_file"
     else
-        echo "No configuration file found!"
+        echo "No configuration file found !"
         exit 1
     fi
     
