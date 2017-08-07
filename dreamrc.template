@@ -1,0 +1,10 @@
+#
+# dream-note configuration file
+#
+# don't put spaces around =
+
+# Root directory of the python virtual environment
+venv_root=/path/to/dreamnote/virtual/env
+
+# dream note root directory (tex source)
+dn_root=/path/to/dreamnote

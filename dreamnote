@@ -4,7 +4,7 @@
 #                          Script execution options                           #
 ###############################################################################
 
-set -o errexit    # exit when a command fails
+# set -o errexit    # exit when a command fails
 # set -o pipefail
 # set -o nounset    # exit when using undeclared variable
 # set -o xtrace     # verbose
@@ -37,9 +37,6 @@ function main() {
     today[month_number]=$(date +"%m")
     today[month_letter]=$(date +"%B")
     today[year]=$(date +"%Y")
-    local -A var_name # Name of the dotfile variable
-    var_name[dn_path]="dream_note_path"
-    var_name[dn_name]="dream_note_name"
     local regex_date="^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$"
 
     source "${DIR}/lib/functions.sh"
@@ -55,46 +52,31 @@ function main() {
     do
       case $opt in
         i|init)
-            initialize "$template" "$tex_contents" "$current_dir" "$config_file" "$OPTARG" "${var_name[dn_path]}" "${var_name[dn_name]}"
+            initialize "$template" "$tex_contents" "$current_dir" "$config_file" "$OPTARG" "$dn_root"
             exit 0
             ;;
         a|add)
-            for var in "${var_name[@]}"; do
-                if [ -n "${!var}" ]; then
-                    true
-                else
-                    echo "$var not set (or empty)"
-                    echo "Could not create a new dream!"
-                    exit 2
-                fi
-            done
-            create_part_chapt "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "${!var_name[dn_path]}" "${!var_name[dn_name]}" "$tex_contents"
+            dreamnote_missing "$dn_root"
+            create_part_chapt "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "$dn_root" "$tex_contents"
+            snapshot "$dn_root"
             exit 0
             ;;
         A)
-            for var in "${var_name[@]}"; do
-                if [ -n "${!var}" ]; then
-                    true
-                else
-                    echo "$var not set (or empty)"
-                    echo "Could not create a new dream!"
-                    exit 2
-                fi
-            done
+            dreamnote_missing "$dn_root"
             if [[ $OPTARG =~ $regex_date ]]; then
                 today[day]=$(date -d "$OPTARG" '+%d')
                 today[month_number]=$(date -d "$OPTARG" '+%m')
                 today[month_letter]=$(date -d "$OPTARG" '+%B')
                 today[year]=$(date -d "$OPTARG" '+%Y')
-                create_part_chapt "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "${!var_name[dn_path]}" "${!var_name[dn_name]}" "$tex_contents"
-                true
+                create_part_chapt "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "$dn_root" "$tex_contents"
             else
                 echo "Bad date format ! See help for more informations"
             fi
+            snapshot "$dn_root"
             exit 0
             ;;
         c|compile)
-            output_pdf "${!var_name[dn_path]}" "${!var_name[dn_name]}"
+            output_pdf "$dn_root"
             exit 0
             ;;
         h|help)
@@ -102,19 +84,8 @@ function main() {
             exit 0
             ;;
         s)
-            for var in "${var_name[@]}"; do
-                if [ -n "${!var}" ]; then
-                    true
-                else
-                    echo "$var not set (or empty)"
-                    echo "Could not create a new dream!"
-                    exit 2
-                fi
-            done
-            source `which virtualenvwrapper.sh` || exit 1
-            workon dream-note
-            "$py_stat_dir" "${!var_name[dn_path]}/${!var_name[dn_name]}/${tex_contents}" 
-            deactivate
+            dreamnote_missing "$dn_root"
+            "${venv_root}/bin/python3" "$py_stat_dir" "${dn_root}/${tex_contents}" 
             exit 0
             ;;
         \?)

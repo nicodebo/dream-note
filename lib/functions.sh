@@ -33,91 +33,72 @@ function usage () {
 	EOF
 }
 
-# This function write a dotfile in the user's home directory. It contains the
-# path of the dream note.
-# $1 - The current directory.
-# $2 - Dotfile path.
-# $3 - name of the dream note provided by the user
-# $4 - name of the dream note path variable
-# $5 - name of the dream note name variable
-function write_conf() {
-    local cur_dir="$1"; shift
-    local dotfile_path="$1"; shift
-    local dn_name="$1"; shift
-    local dn_path_var_name="$1"; shift
-    local dn_name_var_name="$1"; shift
 
-    mkdir -p "$(dirname "$dotfile_path")"
-
-    cat <<-EOT >> "${dotfile_path}"
-	# ${dotfile_path} : dreamnote configuration file
-	
-	
-	# path of the dream note
-	${dn_path_var_name}=$cur_dir
-	
-	# name of the dream note
-	${dn_name_var_name}=$dn_name
-	EOT
+# Check if the dreamnote specified in the configuration file has been
+# initilized
+# $1 - dreamrc configuration file path.
+function dreamnote_missing() {
+  local dn_root="$1"; shift
+  if [[ ! -d "$dn_root" ]]; then
+    echo "A dreamnote has not been initialized !"
+    exit 1
+  fi
 }
-#TODO: remplacer >> (append) par > (overwrite) ?
+
 
 # This function initialize a dream note inside the current directory and create
 # a dotfile specifiying the path of the dreamnote.
 # $1 - url of the latex template
-# $2 - name of the contents drectory
-# $3 - The current directory.
-# $4 - Dotfile path.
-# $5 - name of the dream note provided by the user
-# $6 - name of the dream note path variable
-# $7 - name of the dream note name variable
+# $2 - name of the contents directory
+# $3 - The current directory (directory from which the dreamnote -i command was
+# launched
+# $4 - dreamrc configuration file path
+# $5 - Name of the dreamnote directory
+# $6 - Path of the dreamnote directory read from dreamrc conf
 function initialize() {
     local url="$1"; shift
     local tex_contents="$1"; shift
     local cur_dir="$1"; shift
-    local dotfile_path="$1"; shift
+    local config_path="$1"; shift
     local dn_name="$1"; shift
-    local dn_path_var_name="$1"; shift
-    local dn_name_var_name="$1"; shift
+    local dn_root="$1"; shift
 
-    if [ -s "$dotfile_path" ]; then
-        echo 'a dreamnote already exists !'
+    if [[ -d "$dn_root" ]]; then
+      echo "A dreamnote has already been initialized !"
+      exit 1
     else
-        echo 'Initializing dream note...'
-        filename=$(basename "$url")
-        # TODO: filename should be a local variable 
-        local tmpdir=$(mktemp -d "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")
-	local ziploc="${tmpdir}/${filename}"
-        hash curl 2>/dev/null || { echo >&2 "I require curl but it's not installed.  Aborting."; exit 1; }
-        hash unzip 2>/dev/null || { echo >&2 "I require unzip but it's not installed.  Aborting."; exit 1; }
-        curl -o "$ziploc" "$url"
-        unzip "$ziploc" -d "$dn_name"
-        cd "$dn_name"
-        firstline=$(grep -n -m 1 -E '^\\(part|chapter|section){' main.tex | cut -d : -f 1)
-        lastline=$(grep -n '^\\end{document}' main.tex | cut -d : -f 1)
-        let lastline=lastline-1
-        sed -i main.tex -re "$firstline,${lastline}d"
-        sed -i '/\\\input{structure}/a \\\usepackage{import}' main.tex
-        mkdir "$tex_contents"
-        #:> bibliography.bib
-        echo "Creating a configuration file ($dotfile_path)..."
-	write_conf "$cur_dir" "$dotfile_path" "$dn_name" "$dn_path_var_name" "$dn_name_var_name"
-        curl -o .gitignore https://www.gitignore.io/api/latex
-
-        cat <<-EOT >> .gitignore
+      echo 'Initializing dream note...'
+      filename=$(basename "$url")
+      # TODO: filename should be a local variable 
+      local tmpdir=$(mktemp -d "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")
+      local ziploc="${tmpdir}/${filename}"
+      hash curl 2>/dev/null || { echo >&2 "I require curl but it's not installed.  Aborting."; exit 1; }
+      hash unzip 2>/dev/null || { echo >&2 "I require unzip but it's not installed.  Aborting."; exit 1; }
+      curl -o "$ziploc" "$url"
+      unzip "$ziploc" -d "$dn_name"
+      cd "$dn_name"
+      firstline=$(grep -n -m 1 -E '^\\(part|chapter|section){' main.tex | cut -d : -f 1)
+      lastline=$(grep -n '^\\end{document}' main.tex | cut -d : -f 1)
+      let lastline=lastline-1
+      sed -i main.tex -re "$firstline,${lastline}d"
+      sed -i '/\\\input{structure}/a \\\usepackage{import}' main.tex
+      mkdir "$tex_contents"
+      sed -i "s,\(^dn_root=\).*,\1${cur_dir}/${dn_name}," ${config_path}
+      curl -o .gitignore https://www.gitignore.io/api/latex
+      cat <<-EOT >> .gitignore
 		
 		# added files
 		main.pdf
 		*.ptc
 		EOT
-        snapshot "$cur_dir" "$dn_name"
+      snapshot "${cur_dir}/${dn_name}"
     fi
 }
 
 # This function import a part.tex (ex: 2016.tex) to the main.tex document.
-# $1 - Path of the main.tex of dreamnote.
+# $1 - Path of the main.tex of dreamnote. (ex: /path/to/dreamnote/main.tex)
 # $2 - Relative path of the part.tex to include in the main.tex of the
-# dreamnote.
+# dreamnote
 function import_part_to_main() {
     local maintex_path="$1"; shift
     local part_path="$1"; shift
@@ -185,15 +166,12 @@ function import_chapt_to_part() {
 # $4 - month letter
 # $5 - year
 # $6 - Name of the dream note
-# $7 - Name of the contents directory
 function insert_dream() {
     local chapt_path="$1"; shift
     local dream_title="$1"; shift
     local day="$1"; shift
     local month_let="$1"; shift
     local year="$1"; shift
-    local dn_path="$1"; shift
-    local dn_name="$1"; shift
 
     local section_cur="\section{${day} ${month_let} ${year}}"
     local subsection_cur="\subsection{${dream_title}}"
@@ -256,7 +234,6 @@ function insert_dream() {
             fi
         fi
     fi
-    snapshot "$dn_path" "$dn_name"
 }
 
 # This function append a new dream template to the end of the latex document at
@@ -265,22 +242,20 @@ function insert_dream() {
 # $2 - Month today in number, ex: 12
 # $3 - Month today in letter, ex: Decembre
 # $4 - Year of today, ex: 2016
-# $5 - Path of the dream note
-# $6 - Name of the dream note
-# $7 - Name of the contents directory
+# $5 - Dreamnote directory
+# $6 - Name of the contents directory
 function create_part_chapt() {
     local day="$1"; shift
     local month_num="$1"; shift
     local month_let="$1"; shift
     local year="$1"; shift
-    local dn_path="$1"; shift
-    local dn_name="$1"; shift
+    local dn_root="$1"; shift
     local tex_contents="$1"; shift
 
     local chapt_dir='chapters'
-    local chapter_dir="${dn_path}/${dn_name}/${tex_contents}/${year}/${chapt_dir}"
-    local part_file="${dn_path}/${dn_name}/${tex_contents}/${year}/${year}.tex"
-    local chapt_file="${dn_path}/${dn_name}/${tex_contents}/${year}/${chapt_dir}/${month_num}.tex"
+    local chapter_dir="${dn_root}/${tex_contents}/${year}/${chapt_dir}"
+    local part_file="${dn_root}/${tex_contents}/${year}/${year}.tex"
+    local chapt_file="${dn_root}/${tex_contents}/${year}/${chapt_dir}/${month_num}.tex"
 
     if [ ! -e "$part_file" ] ; then
         mkdir -p "$chapter_dir"
@@ -295,7 +270,7 @@ function create_part_chapt() {
 		%   CHAPTERS
 		%------------------------------------------------------------------------------
 		EOT
-        import_part_to_main "${dn_path}/${dn_name}/main.tex" "${tex_contents}/${year}/${year}.tex"
+        import_part_to_main "${dn_root}/main.tex" "${tex_contents}/${year}/${year}.tex"
     fi
 
     if [ ! -e "$chapt_file" ] ; then
@@ -316,17 +291,14 @@ function create_part_chapt() {
         import_chapt_to_part "${part_file}" "${chapt_dir}/${month_num}.tex"
     fi
 
-    insert_dream "$chapt_file" "blank title" "$day" "$month_let" "$year" "$dn_path" "$dn_name"
+    insert_dream "$chapt_file" "blank title" "$day" "$month_let" "$year"
 }
 
 # Compile with latexmk and output pdf. Run in one shot mode.
-# $1 - Path of the dream note
-# $2 - Name of the dream note
+# $1 - dreamnote directory
 function output_pdf() {
-    local dn_path="$1"; shift
-    local dn_name="$1"; shift
-    local main_tex_path="${dn_path}/${dn_name}/main.tex"
-    cd "${dn_path}/${dn_name}"
+    local dn_root="$1"; shift
+    cd "${dn_root}"
 
     hash latexmk 2>/dev/null || { echo >&2 "I require latexmk but it's not installed.  Aborting."; exit 1; }
     latexmk -C
@@ -351,12 +323,9 @@ function output_pdf() {
 #TODO : faire une variable pour le nom du fichier tex (main)
 #TODO : ne pas afficher texwarn si cette variable est vide.
 
-# $1 - Path of the dream note
-# $2 - Name of the dream note
+# $1 - dreamnote directory
 function snapshot() {
-    local dn_path="$1"; shift
-    local dn_name="$1"; shift
-    local git_local="${dn_path}/${dn_name}"
+    local dn_root="$1"; shift
     local today_date=$(date +"%Y-%m-%d")
     local new_file=""
     local last_com_mess=""
@@ -368,14 +337,16 @@ function snapshot() {
     if hash git 2> /dev/null \
       && git config --get user.name > /dev/null 2>&1 \
       && git config --get user.email > /dev/null 2>&1; then
-      cd "$git_local"
+      cd "$dn_root"
       if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
         # get untracked file and modified file in the working directory
         new_file=$(git ls-files --other --modified --exclude-standard)
         last_com_mess=$(git log -1 --pretty=format:'%s')
         if [ -n "$new_file" ]; then
-            tmp_var=$(echo "$last_com_mess" | grep "$today_date")
-            if [ -n "$tmp_var" ]; then
+            # set -o errexit will make the program fail when there is no match
+            # for grep because it return 1 when no match !!!
+            tmp_var=$(echo "$last_com_mess" | grep -c "$today_date")
+            if [ "$tmp_var" -gt 0 ]; then
                 num=$(echo "$last_com_mess" | grep -oP '(?<=\()[0-9]*(?=\))')
             fi
             let num++

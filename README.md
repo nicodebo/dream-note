@@ -15,30 +15,66 @@ Template](http://www.latextemplates.com/template/the-legrand-orange-book).
 
 1.  The script depends on the following tools:
     *  python 3.6
-    *  vim or neovim (required)
-    *  curl (used to download the template) (required)
-    *  unzip (used to extract the template archive) (required)
-    *  perl (used for some text processing tasks) (required)
-    *  texlive (the typesetting system) (required)
-    *  latexmk (automatically installed with the latest TeXLive) (required)
-    *  xdg-utils (used to open the pdf) (optional)
-    *  git (set up with a name and an email address) (optional)
-    *  rubber (used to parse compilation error log) (optional)
-    *  virtualenvwrapper (used to install necessary python library) (required)
+    *  vim or neovim
+    *  curl (used to download the template)
+    *  unzip (used to extract the template archive)
+    *  perl (used for some text processing tasks)
+    *  texlive (the typesetting system)
+    *  xdg-utils (used to open the pdf)
+    *  git (set up with a name and an email address)
+    *  rubber (used to parse compilation error log)
 
     For exemple on archlinux: `pacman -S neovim curl unzip perl texlive-most xdg-utils git
-    rubber python-virtualenvwrapper`
+    rubber`
 
-2. Clone this repository and launch the install script:
+2. Clone this repository and run the makefile:
 
 ```bash
 cd /tmp
 git clone https://github.com/nicodebo/dream-note
-cd dream-note
-./install ~/bin
+cd /dream-note
+make
 ```
+The make command will do the following:
+* The template configuration file will be copied to `$XDG_CONFIG_HOME/dreamnote/dreamrc`
+* A python virtual environment will be created under `$XDG_DATA_HOME/dreamnote/venv`
+* This repository will be copied to `$HOME/bin/dream-note`
+* A symlink of the `dreamnote` main executable is created under `$HOME/bin`
+  (`$HOME/bin` should be in your `$PATH` in order to run `dreamnote` from every
+  location)
 
-Where `~/bin` is the directory where I install my custom tool. Change accordingly.
+Note:
+* You can change the directory of the virtual environment and the directory
+  where the source are installed by invoking `make` in the following manner:
+  ```bash
+  make venv_dreamnote=/path/to/dreamnote/venv source_dir=/path/to/dreamnote/source
+  ```
+  and make sure `/path/to/dreamnote/source` is in your `$PATH`
+* To update: 
+  ```bash
+  # go to directory where the source are installed
+  cd /path/to/dreamnote/source # or cd $HOME/bin/dream-note if you ran bare make 
+  # get the latest dreamnote source 
+  git pull
+  # to update the virtual environment
+  make
+  ```
+* To change the directory of the virtual environment after the first
+  installation change the `venv_root`value of the dreamnote configuration file
+  launch make to build the venv.
+
+3. Alternatively you can manage dreamnote with
+   [zplug](https://github.com/zplug/zplug)
+
+   ```bash
+   zplug "nicodebo/dreamnote", \
+    as:command, \
+    use:dreamnote, \
+    hook-build:"make venv"
+   ```
+
+   Then, simply use `zplug install` to install `dreamnote` and `zplug update`
+   to update `dreamnote`
 
 ## How to use
 
