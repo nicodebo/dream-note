@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 ###############################################################################
 #                                  Functions                                  #
 ###############################################################################
@@ -70,20 +72,20 @@ function initialize() {
       echo 'Initializing dream note...'
       filename=$(basename "$url")
       # TODO: filename should be a local variable 
-      local tmpdir=$(mktemp -d "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")
+      local tmpdir; tmpdir=$(mktemp -d "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")
       local ziploc="${tmpdir}/${filename}"
       hash curl 2>/dev/null || { echo >&2 "I require curl but it's not installed.  Aborting."; exit 1; }
       hash unzip 2>/dev/null || { echo >&2 "I require unzip but it's not installed.  Aborting."; exit 1; }
       curl -o "$ziploc" "$url"
       unzip "$ziploc" -d "$dn_name"
-      cd "$dn_name"
+      cd "$dn_name" || exit
       firstline=$(grep -n -m 1 -E '^\\(part|chapter|section){' main.tex | cut -d : -f 1)
       lastline=$(grep -n '^\\end{document}' main.tex | cut -d : -f 1)
       let lastline=lastline-1
       sed -i main.tex -re "$firstline,${lastline}d"
       sed -i '/\\\input{structure}/a \\\usepackage{import}' main.tex
       mkdir "$tex_contents"
-      sed -i "s,\(^dn_root=\).*,\1${cur_dir}/${dn_name}," ${config_path}
+      sed -i "s,\(^dn_root=\).*,\1${cur_dir}/${dn_name}," "${config_path}"
       curl -o .gitignore https://www.gitignore.io/api/latex
       cat <<-EOT >> .gitignore
 		
@@ -95,6 +97,7 @@ function initialize() {
     fi
 }
 
+
 # This function import a part.tex (ex: 2016.tex) to the main.tex document.
 # $1 - Path of the main.tex of dreamnote. (ex: /path/to/dreamnote/main.tex)
 # $2 - Relative path of the part.tex to include in the main.tex of the
@@ -103,13 +106,14 @@ function import_part_to_main() {
     local maintex_path="$1"; shift
     local part_path="$1"; shift
 
-    local filename=$(basename "${part_path}")
+    local filename; filename=$(basename "${part_path}")
     filename="${filename%.*}"
-    local dirname=$(dirname "${part_path}")
+    local dirname; dirname=$(dirname "${part_path}")
     dirname="${dirname}/"
     local import_part_cur="\subimport{${dirname}}{${filename}}"
 
-    local imported_parts_old=$(grep '^\\subimport{' "$maintex_path") # TODO: compléter la pattern pour éviter
+    local imported_parts_old
+    imported_parts_old=$(grep '^\\subimport{' "$maintex_path") # TODO: compléter la pattern pour éviter
     local imported_parts_new
 
     if [ -z "$imported_parts_old" ]; then
@@ -125,6 +129,7 @@ function import_part_to_main() {
     fi
 }
 
+
 # This function import a chapter (ex: 11.tex) to the part document (ex:
 # 2016.tex)
 # $1 - Path of the part.tex
@@ -133,13 +138,14 @@ function import_chapt_to_part() {
     local part_path="$1"; shift
     local chapt_path="$1"; shift
 
-    local filename=$(basename "${chapt_path}")
+    local filename; filename=$(basename "${chapt_path}")
     filename="${filename%.*}"
-    local dirname=$(dirname "${chapt_path}")
+    local dirname; dirname=$(dirname "${chapt_path}")
     dirname="${dirname}/"
     local input_chapt_cur="\input{${dirname}${filename}}"
 
-    local input_chapt_old=$(grep '^\\input{' "$part_path") # TODO: compléter la pattern pour éviter
+    local input_chapt_old
+    input_chapt_old=$(grep '^\\input{' "$part_path") # TODO: compléter la pattern pour éviter
     local input_chapt_new
 
     if [ -z "$input_chapt_old" ]; then
@@ -177,9 +183,8 @@ function insert_dream() {
     local subsection_cur="\subsection{${dream_title}}"
     local dream_cur="${section_cur}"$'\n'"${subsection_cur}"
 
-    local section_old=$(grep '^\\section{' "$chapt_path") # day already filled.
+    local section_old; section_old=$(grep '^\\section{' "$chapt_path") # day already filled.
     local section_new
-    local sect_cur_pos # Section to insert the current dream above.
     local cur_line
     local sepline='%------------------------------------------------------------------------------'
     local tmp_var
@@ -298,13 +303,13 @@ function create_part_chapt() {
 # $1 - dreamnote directory
 function output_pdf() {
     local dn_root="$1"; shift
-    cd "${dn_root}"
+    cd "${dn_root}" || exit
 
     hash latexmk 2>/dev/null || { echo >&2 "I require latexmk but it's not installed.  Aborting."; exit 1; }
     latexmk -C
     latexmk -pdf -quiet -f -pdflatex="pdflatex -interaction=nonstopmode" main.tex
-    local texerror=$(rubber-info --errors main)
-    local texwarn=$(rubber-info --warnings main)
+    local texerror; texerror=$(rubber-info --errors main)
+    local texwarn; texwarn=$(rubber-info --warnings main)
     if [ -z "$texerror" ]; then
         hash xdg-open 2>/dev/null || { echo >&2 "I require xdg-open but it's not installed.  Aborting."; exit 1; }
         xdg-open main.pdf
@@ -326,7 +331,7 @@ function output_pdf() {
 # $1 - dreamnote directory
 function snapshot() {
     local dn_root="$1"; shift
-    local today_date=$(date +"%Y-%m-%d")
+    local today_date; today_date=$(date +"%Y-%m-%d")
     local new_file=""
     local last_com_mess=""
     local cur_com_mess=""
@@ -337,7 +342,7 @@ function snapshot() {
     if hash git 2> /dev/null \
       && git config --get user.name > /dev/null 2>&1 \
       && git config --get user.email > /dev/null 2>&1; then
-      cd "$dn_root"
+      cd "$dn_root" || exit
       if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
         # get untracked file and modified file in the working directory
         new_file=$(git ls-files --other --modified --exclude-standard)
@@ -358,7 +363,9 @@ function snapshot() {
         git add -A && git commit -m "dream journal initialization"
       fi
     else
-      echo "git is not installed and/or set up with an name and email" 
-      echo "install git and/or set it up with a name and an email" 
+      echo "git is not installed and/or set up with an name and email"
+      echo "install git and/or set it up with a name and an email"
     fi
 }
+
+# TODO: fix mixed indenting

@@ -28,9 +28,8 @@ function main() {
   local xdg_config="${XDG_CONFIG_HOME:-$HOME/.config}"
   local config_file="${xdg_config}/dreamnote/dreamrc"
   local py_stat_dir="${DIR}/lib/stat.py"
-  local __ScriptVersion="1"
   local template=http://www.latextemplates.com/templates/books/2/book_2.zip
-  local current_dir=$(pwd)
+  local current_dir; current_dir=$(pwd)
   local tex_contents="contents"
   local -A today
   today[day]=$(date +"%d")
@@ -39,9 +38,11 @@ function main() {
   today[year]=$(date +"%Y")
   local regex_date="^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$"
 
+  # shellcheck source=lib/functions.sh
   source "${DIR}/lib/functions.sh"
 
   if [ -f "$config_file" ]; then
+    # shellcheck source=dreamrc.template
     source "$config_file"
   else
     echo "No configuration file found !"

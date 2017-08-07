@@ -100,7 +100,7 @@ def main():
 
     df = pd.DataFrame.from_dict(dream_type_freq, orient='index')
 
-    sizebox = len(str(df.values.sum())) + 32 
+    sizebox = len(str(df.values.sum())) + 32
 
     message = """
     {}
@@ -111,7 +111,7 @@ def main():
      Number of lucid dreams        {}
     {}
      Total number of dreams        {}
-    """.format("-" * sizebox, 
+    """.format("-" * sizebox,
                "-" * sizebox,
                df['n'].sum(),
                df['pl'].sum(),
@@ -128,6 +128,8 @@ def main():
 ###############################################################################
 #                                Execute main                                 #
 ###############################################################################
+
+
 try:
     main()
 except Exception as e:
