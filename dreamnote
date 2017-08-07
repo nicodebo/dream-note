@@ -16,89 +16,89 @@
 # The main function contains variable definition and the getopts loop that
 # allow to handle the command line arguments.
 function main() {
-    # find main script directory
-    SOURCE="${BASH_SOURCE[0]}"
-    while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
-      DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-      SOURCE="$(readlink "$SOURCE")"
-      [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
-    done
+  # find main script directory
+  SOURCE="${BASH_SOURCE[0]}"
+  while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
     DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+  done
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-    local xdg_config="${XDG_CONFIG_HOME:-$HOME/.config}"
-    local config_file="${xdg_config}/dreamnote/dreamrc"
-    local py_stat_dir="${DIR}/lib/stat.py"
-    local __ScriptVersion="1"
-    local template=http://www.latextemplates.com/templates/books/2/book_2.zip
-    local current_dir=$(pwd)
-    local tex_contents="contents"
-    local -A today
-    today[day]=$(date +"%d")
-    today[month_number]=$(date +"%m")
-    today[month_letter]=$(date +"%B")
-    today[year]=$(date +"%Y")
-    local regex_date="^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$"
+  local xdg_config="${XDG_CONFIG_HOME:-$HOME/.config}"
+  local config_file="${xdg_config}/dreamnote/dreamrc"
+  local py_stat_dir="${DIR}/lib/stat.py"
+  local __ScriptVersion="1"
+  local template=http://www.latextemplates.com/templates/books/2/book_2.zip
+  local current_dir=$(pwd)
+  local tex_contents="contents"
+  local -A today
+  today[day]=$(date +"%d")
+  today[month_number]=$(date +"%m")
+  today[month_letter]=$(date +"%B")
+  today[year]=$(date +"%Y")
+  local regex_date="^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$"
 
-    source "${DIR}/lib/functions.sh"
+  source "${DIR}/lib/functions.sh"
 
-    if [ -f "$config_file" ]; then
-        source "$config_file"
-    else
-        echo "No configuration file found !"
+  if [ -f "$config_file" ]; then
+    source "$config_file"
+  else
+    echo "No configuration file found !"
+    exit 1
+  fi
+
+  while getopts ":hi:aA:cs" opt
+  do
+    case $opt in
+      i|init)
+        initialize "$template" "$tex_contents" "$current_dir" "$config_file" "$OPTARG" "$dn_root"
+        exit 0
+        ;;
+      a|add)
+        dreamnote_missing "$dn_root"
+        create_part_chapt "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "$dn_root" "$tex_contents"
+        snapshot "$dn_root"
+        exit 0
+        ;;
+      A)
+        dreamnote_missing "$dn_root"
+        if [[ $OPTARG =~ $regex_date ]]; then
+          today[day]=$(date -d "$OPTARG" '+%d')
+          today[month_number]=$(date -d "$OPTARG" '+%m')
+          today[month_letter]=$(date -d "$OPTARG" '+%B')
+          today[year]=$(date -d "$OPTARG" '+%Y')
+          create_part_chapt "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "$dn_root" "$tex_contents"
+        else
+          echo "Bad date format ! See help for more informations"
+        fi
+        snapshot "$dn_root"
+        exit 0
+        ;;
+      c|compile)
+        output_pdf "$dn_root"
+        exit 0
+        ;;
+      h|help)
+        usage
+        exit 0
+        ;;
+      s)
+        dreamnote_missing "$dn_root"
+        "${venv_root}/bin/python3" "$py_stat_dir" "${dn_root}/${tex_contents}"
+        exit 0
+        ;;
+      \?)
+        echo "Invalid option: -$OPTARG" >&2
         exit 1
-    fi
-    
-    while getopts ":hi:aA:cs" opt
-    do
-      case $opt in
-        i|init)
-            initialize "$template" "$tex_contents" "$current_dir" "$config_file" "$OPTARG" "$dn_root"
-            exit 0
-            ;;
-        a|add)
-            dreamnote_missing "$dn_root"
-            create_part_chapt "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "$dn_root" "$tex_contents"
-            snapshot "$dn_root"
-            exit 0
-            ;;
-        A)
-            dreamnote_missing "$dn_root"
-            if [[ $OPTARG =~ $regex_date ]]; then
-                today[day]=$(date -d "$OPTARG" '+%d')
-                today[month_number]=$(date -d "$OPTARG" '+%m')
-                today[month_letter]=$(date -d "$OPTARG" '+%B')
-                today[year]=$(date -d "$OPTARG" '+%Y')
-                create_part_chapt "${today[day]}" "${today[month_number]}" "${today[month_letter]}" "${today[year]}" "$dn_root" "$tex_contents"
-            else
-                echo "Bad date format ! See help for more informations"
-            fi
-            snapshot "$dn_root"
-            exit 0
-            ;;
-        c|compile)
-            output_pdf "$dn_root"
-            exit 0
-            ;;
-        h|help)
-            usage
-            exit 0
-            ;;
-        s)
-            dreamnote_missing "$dn_root"
-            "${venv_root}/bin/python3" "$py_stat_dir" "${dn_root}/${tex_contents}" 
-            exit 0
-            ;;
-        \?)
-            echo "Invalid option: -$OPTARG" >&2
-            exit 1
-            ;;
-        :)
-            echo "Option -$OPTARG requires an argument." >&2
-            exit 1
-            ;;
-      esac
-    done
-    shift $(($OPTIND-1))
+        ;;
+      :)
+        echo "Option -$OPTARG requires an argument." >&2
+        exit 1
+        ;;
+    esac
+  done
+  shift $(($OPTIND-1))
 }
 
 ###############################################################################
