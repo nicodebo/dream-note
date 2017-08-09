@@ -63,19 +63,6 @@ Note:
   installation change the `venv_root`value of the dreamnote configuration file
   launch make to build the venv.
 
-3. Alternatively you can manage dreamnote with
-   [zplug](https://github.com/zplug/zplug)
-
-   ```bash
-   zplug "nicodebo/dreamnote", \
-    as:command, \
-    use:dreamnote, \
-    hook-build:"make venv"
-   ```
-
-   Then, simply use `zplug install` to install `dreamnote` and `zplug update`
-   to update `dreamnote`
-
 ## How to use
 
 ### Help
