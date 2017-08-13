@@ -26,7 +26,7 @@ all: venv fetch_src
 venv: copy_conf
 	venv_tmp=$$(grep '^venv_root' $(conf_dreamnote) | sed 's/venv_root=//'); \
 	python3 -m venv $${venv_tmp}; \
-	$${venv_tmp}/bin/pip install $(python_pck)
+	$${venv_tmp}/bin/pip install $(python_pck) -U
 
 # copy the configuration file model only if it does not already exists
 # and write the path of the virtual environment inside of it
