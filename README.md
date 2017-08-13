@@ -32,7 +32,7 @@ Template](http://www.latextemplates.com/template/the-legrand-orange-book).
 ```bash
 cd /tmp
 git clone https://github.com/nicodebo/dream-note
-cd /dream-note
+cd dream-note
 make
 ```
 The make command will do the following:
